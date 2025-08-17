@@ -112,10 +112,10 @@ async fn test_simple_kvstore() {
         Ok(store) => {
             // Test basic operations
             let set_result = store.set("test_key", "test_value").await;
-            println!("KVStore SET result: {:?}", set_result.is_ok());
+            assert!(set_result.is_ok(), "KVStore SET failed: {:?}", set_result);
 
             let get_result = store.get("test_key").await;
-            println!("KVStore GET result: {:?}", get_result.is_ok());
+            assert!(get_result.is_ok(), "KVStore GET failed: {:?}", get_result);
         }
         Err(e) => {
             println!("KVStore creation failed: {:?}", e);

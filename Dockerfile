@@ -56,12 +56,13 @@ USER rabia
 # Set working directory for data
 WORKDIR /var/lib/rabia
 
-# Default to running the KVStore example
-CMD ["kvstore_usage"]
+# Set default example to run
+ENV RABIA_EXAMPLE=kvstore_usage
+CMD ["sh", "-c", "$RABIA_EXAMPLE"]
 
 # Health check
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD pgrep -f kvstore_usage > /dev/null || exit 1
+    CMD pgrep -f "$RABIA_EXAMPLE" > /dev/null || exit 1
 
 # Labels
 LABEL maintainer="Rabia Contributors"

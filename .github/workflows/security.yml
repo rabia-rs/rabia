@@ -69,7 +69,11 @@ jobs:
         # Check each crate for semver compatibility
         for crate in rabia-core rabia-engine rabia-network rabia-persistence rabia-testing rabia-kvstore; do
           echo "Checking semver for $crate"
-          cargo semver-checks check-release --package $crate || true
+          if cargo semver-checks check-release --package $crate; then
+            echo "✅ Semver check passed for $crate"
+          else
+            echo "⚠️  Semver check failed for $crate (may be expected for new releases)"
+          fi
         done
 
   reproducible-build:

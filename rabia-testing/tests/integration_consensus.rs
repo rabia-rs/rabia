@@ -216,22 +216,23 @@ async fn test_consensus_multiple_scenarios() {
         },
     ];
 
-    for scenario in scenarios {
+    for scenario in scenarios.into_iter() {
         let config = RabiaConfig::default();
         let mut harness = ConsensusTestHarness::new(scenario.node_count, config).await;
 
+        let scenario_name = scenario.name.clone();
         let result = timeout(
             scenario.timeout + Duration::from_secs(5),
-            harness.run_scenario(scenario.clone()),
+            harness.run_scenario(scenario),
         )
         .await;
 
-        assert!(result.is_ok(), "Scenario '{}' timed out", scenario.name);
+        assert!(result.is_ok(), "Scenario '{}' timed out", scenario_name);
 
         let test_result = result.unwrap();
         println!(
             "Scenario '{}': success={}, details={}",
-            scenario.name, test_result.success, test_result.details
+            scenario_name, test_result.success, test_result.details
         );
 
         harness.shutdown().await;

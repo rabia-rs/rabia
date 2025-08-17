@@ -10,7 +10,6 @@ use tokio::time::sleep;
 use tracing::info;
 
 use rabia_core::{
-    batching::{BatchConfig, BatchProcessor},
     memory_pool::{MemoryPool, PoolConfig},
     serialization::{BinarySerializer, MessageSerializer},
     Command, CommandBatch,
@@ -220,14 +219,6 @@ impl PerformanceBenchmark {
 
     /// Benchmark command batch creation and processing
     async fn benchmark_command_batching(&self) -> BenchmarkResults {
-        let _batch_config = BatchConfig {
-            max_batch_size: self.config.batch_size,
-            max_batch_delay: Duration::from_millis(10),
-            buffer_capacity: 1000,
-            adaptive: false,
-        };
-
-        let _batch_processor = BatchProcessor::new();
         let value = "x".repeat(self.config.value_size);
 
         let start = Instant::now();
