@@ -97,8 +97,16 @@ where
                 // Handle incoming commands
                 command_opt = self.command_rx.recv() => {
                     if let Some(command) = command_opt {
-                        if let Err(e) = self.handle_command(command).await {
-                            error!("Error handling command: {}", e);
+                        match command {
+                            EngineCommand::Shutdown => {
+                                info!("Shutting down consensus engine");
+                                break Ok(());
+                            }
+                            _ => {
+                                if let Err(e) = self.handle_command(command).await {
+                                    error!("Error handling command: {}", e);
+                                }
+                            }
                         }
                     } else {
                         // Channel closed, exit loop
@@ -158,8 +166,9 @@ where
         match command {
             EngineCommand::ProcessBatch(request) => self.process_batch_request(request).await,
             EngineCommand::Shutdown => {
-                info!("Shutting down consensus engine");
-                Err(RabiaError::internal("Shutdown requested"))
+                // This should be handled in the main loop, but if it gets here, return Ok
+                info!("Shutdown command handled");
+                Ok(())
             }
             EngineCommand::ForcePhaseAdvance => self.advance_to_next_phase().await,
             EngineCommand::TriggerSync => self.initiate_sync().await,

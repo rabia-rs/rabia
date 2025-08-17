@@ -79,7 +79,7 @@ async fn test_simulated_network_basic() {
     let node1_id = NodeId::new();
     let node2_id = NodeId::new();
 
-    let mut network1 = SimulatedNetwork::new(node1_id, simulator.clone()).await;
+    let network1 = SimulatedNetwork::new(node1_id, simulator.clone()).await;
     let mut network2 = SimulatedNetwork::new(node2_id, simulator.clone()).await;
 
     // Connect nodes
@@ -149,7 +149,7 @@ async fn test_network_packet_loss() {
     let node1_id = NodeId::new();
     let node2_id = NodeId::new();
 
-    let mut network1 = SimulatedNetwork::new(node1_id, simulator.clone()).await;
+    let network1 = SimulatedNetwork::new(node1_id, simulator.clone()).await;
     let mut network2 = SimulatedNetwork::new(node2_id, simulator.clone()).await;
 
     // Connect nodes
@@ -242,7 +242,7 @@ async fn test_network_broadcast() {
     let node2_id = NodeId::new();
     let node3_id = NodeId::new();
 
-    let mut network1 = SimulatedNetwork::new(node1_id, simulator.clone()).await;
+    let network1 = SimulatedNetwork::new(node1_id, simulator.clone()).await;
     let mut network2 = SimulatedNetwork::new(node2_id, simulator.clone()).await;
     let mut network3 = SimulatedNetwork::new(node3_id, simulator.clone()).await;
 
@@ -317,7 +317,7 @@ async fn test_network_partition() {
     let node1_id = NodeId::new();
     let node2_id = NodeId::new();
 
-    let mut network1 = SimulatedNetwork::new(node1_id, simulator.clone()).await;
+    let network1 = SimulatedNetwork::new(node1_id, simulator.clone()).await;
     let mut network2 = SimulatedNetwork::new(node2_id, simulator.clone()).await;
 
     // Connect nodes
