@@ -9,28 +9,24 @@ A high-performance, production-ready Rust implementation of the **Rabia consensu
 
 ## 🚀 Key Features
 
-- **High Performance**: Up to **12.5M commands/second** throughput with intelligent batching
+- **High Performance**: Intelligent batching and optimized serialization for maximum throughput
 - **Production Ready**: Comprehensive error handling, recovery mechanisms, and edge case handling  
 - **Memory Efficient**: Advanced memory pooling and zero-allocation serialization paths
-- **Binary Serialization**: 9.7x faster than JSON with 54.8% smaller message sizes
+- **Binary Serialization**: Compact binary format for efficient network communication
 - **Adaptive Batching**: Intelligent command grouping that adapts to load patterns
 - **Async/Await**: Built on Tokio for scalable concurrent processing
 - **Type Safe**: Leverages Rust's type system for correctness guarantees
 - **Well Tested**: Comprehensive test suite including network simulation and fault injection
 
-## 📊 Performance Benchmarks
+## 🎯 Performance Characteristics
 
-Our optimizations deliver exceptional performance:
+Rabia-rs is designed for high-performance consensus with:
 
-| Metric | Baseline (JSON) | Optimized (Binary + Batching) | Improvement |
-|--------|----------------|--------------------------------|-------------|
-| **Message Serialization** | 748ns | 96ns | **9.7x faster** |
-| **End-to-End Processing** | 282μs | 29μs | **9.6x faster** |
-| **High Throughput** | 6.5ms | 1.0ms | **6.5x faster** |
-| **Memory Efficiency** | 654μs | 99μs | **6.6x faster** |
-| **Message Size** | 655 bytes | 296 bytes | **54.8% smaller** |
-
-**Peak Consensus Throughput**: **12,563 batches/second** (up to 12.5M commands/second)
+- **Efficient Serialization**: Compact binary message format for reduced network overhead
+- **Adaptive Batching**: Automatically groups commands for optimal throughput
+- **Memory Optimization**: Advanced pooling reduces allocation overhead
+- **Async Architecture**: Non-blocking I/O for concurrent processing
+- **Zero-Copy Paths**: Minimizes data copying in hot code paths
 
 ## 🏗️ Architecture
 
@@ -154,7 +150,7 @@ use rabia_core::serialization::Serializer;
 // Use high-performance binary serialization
 let serializer = Serializer::binary();
 
-// 9.7x faster serialization + 54.8% smaller messages
+// High-performance binary serialization
 let message = create_consensus_message();
 let serialized = serializer.serialize_message(&message)?;
 let deserialized = serializer.deserialize_message(&serialized)?;
