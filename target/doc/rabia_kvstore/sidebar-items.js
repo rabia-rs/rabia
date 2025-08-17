@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"mod":["notifications","operations","store"],"struct":["Command","CommandBatch","NodeId"]};

@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"enum":["KVOperation","KVResult","StoreError"],"struct":["BatchResult","OperationBatch"]};

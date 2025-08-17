@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"enum":["ChangeType","NotificationFilter"],"struct":["ChangeNotification","NotificationBus","NotificationListener","NotificationStats","Subscription","SubscriptionId"]};

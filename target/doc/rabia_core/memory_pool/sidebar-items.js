@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["get_pooled_buffer"],"struct":["MemoryPool","PoolConfig","PoolStats","PooledBuffer","PooledString","StringPool"]};

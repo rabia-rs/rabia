@@ -1,1 +1,0 @@
-searchState.loadedDescShard("kvstore_usage", 0, "KVStore Usage Example")

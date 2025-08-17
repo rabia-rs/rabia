@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"enum":["WALOperation"],"struct":["PersistedState","PersistenceConfig","WriteAheadLogEntry"],"trait":["PersistenceLayer"]};

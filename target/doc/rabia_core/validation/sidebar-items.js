@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"fn":["validate_message_sequence"],"struct":["ValidationConfig"],"trait":["Validator"]};

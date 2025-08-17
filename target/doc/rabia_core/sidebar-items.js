@@ -1,1 +1,0 @@
-window.SIDEBAR_ITEMS = {"mod":["batching","error","memory_pool","messages","network","persistence","serialization","state_machine","types","validation"]};
