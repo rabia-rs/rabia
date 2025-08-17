@@ -164,13 +164,18 @@ async fn test_multiple_batches() {
 
         if let Some(sender) = command_senders.first() {
             let (response_tx, response_rx) = tokio::sync::oneshot::channel();
-            let cmd = EngineCommand::ProcessBatch(rabia_engine::CommandRequest { batch, response_tx });
+            let cmd =
+                EngineCommand::ProcessBatch(rabia_engine::CommandRequest { batch, response_tx });
 
             sender.send(cmd).expect("Failed to send command");
 
             // Wait for response with timeout
             let result = timeout(Duration::from_secs(5), response_rx).await;
-            assert!(result.is_ok(), "Command processing timed out for batch {}", i);
+            assert!(
+                result.is_ok(),
+                "Command processing timed out for batch {}",
+                i
+            );
         }
 
         // Small delay between batches
@@ -282,15 +287,15 @@ async fn test_engine_lifecycle() {
     );
 
     // Start engine
-    let handle = tokio::spawn(async move {
-        engine.run().await
-    });
+    let handle = tokio::spawn(async move { engine.run().await });
 
     // Give node time to initialize
     tokio::time::sleep(Duration::from_millis(100)).await;
 
     // Send shutdown command
-    cmd_tx.send(EngineCommand::Shutdown).expect("Failed to send shutdown command");
+    cmd_tx
+        .send(EngineCommand::Shutdown)
+        .expect("Failed to send shutdown command");
 
     // Wait for engine to shutdown gracefully
     let result = timeout(Duration::from_secs(10), handle).await;
@@ -298,7 +303,7 @@ async fn test_engine_lifecycle() {
 
     // Check that shutdown was successful
     match result.unwrap() {
-        Ok(_) => {}, // Successful shutdown
+        Ok(_) => {} // Successful shutdown
         Err(e) => panic!("Engine returned error during shutdown: {:?}", e),
     }
 }

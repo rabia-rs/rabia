@@ -299,7 +299,8 @@ impl ConsensusTestHarness {
                 .send(EngineCommand::GetStatistics(stats_tx))
                 .is_ok()
             {
-                if let Ok(Ok(stats)) = tokio::time::timeout(Duration::from_millis(100), stats_rx).await
+                if let Ok(Ok(stats)) =
+                    tokio::time::timeout(Duration::from_millis(100), stats_rx).await
                 {
                     node_stats.insert(node_id, stats);
                 }
