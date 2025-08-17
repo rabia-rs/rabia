@@ -6,7 +6,7 @@ description = "Network abstraction layer for Rabia consensus protocol"
 license = "Apache-2.0"
 
 [dependencies]
-rabia-core = { path = "../rabia-core" }
+rabia-core = { path = "../rabia-core", version = "0.1.0" }
 tokio = { workspace = true }
 serde = { workspace = true }
 uuid = { workspace = true }

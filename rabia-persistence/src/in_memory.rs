@@ -92,12 +92,12 @@ impl PersistenceLayer for InMemoryPersistence {
         // Create WAL entry
         let wal_operation = match self.state.read().clone() {
             Some(old_state) => WALOperation::StateUpdate {
-                old_state,
-                new_state: new_state.clone(),
+                old_state: Box::new(old_state),
+                new_state: Box::new(new_state.clone()),
             },
             None => WALOperation::StateUpdate {
-                old_state: new_state.clone(), // Use new_state as placeholder
-                new_state: new_state.clone(),
+                old_state: Box::new(new_state.clone()), // Use new_state as placeholder
+                new_state: Box::new(new_state.clone()),
             },
         };
 

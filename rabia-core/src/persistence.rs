@@ -78,8 +78,8 @@ pub struct WriteAheadLogEntry {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum WALOperation {
     StateUpdate {
-        old_state: PersistedState,
-        new_state: PersistedState,
+        old_state: Box<PersistedState>,
+        new_state: Box<PersistedState>,
     },
     PhaseAdvance {
         from: PhaseId,
