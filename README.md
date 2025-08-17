@@ -3,7 +3,9 @@
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![Crates.io](https://img.shields.io/crates/v/rabia-core.svg)](https://crates.io/crates/rabia-core)
 [![Documentation](https://docs.rs/rabia-core/badge.svg)](https://docs.rs/rabia-core)
-[![Build Status](https://github.com/rabia-rs/rabia/actions/workflows/ci.yml/badge.svg)](https://github.com/rabia-rs/rabia/actions)
+[![CI](https://github.com/rabia-rs/rabia/actions/workflows/ci.yml/badge.svg)](https://github.com/rabia-rs/rabia/actions/workflows/ci.yml)
+[![Security](https://github.com/rabia-rs/rabia/actions/workflows/security.yml/badge.svg)](https://github.com/rabia-rs/rabia/actions/workflows/security.yml)
+[![codecov](https://codecov.io/gh/rabia-rs/rabia/branch/main/graph/badge.svg)](https://codecov.io/gh/rabia-rs/rabia)
 
 A high-performance, production-ready Rust implementation of the **Rabia consensus protocol** - a randomized Byzantine-resilient consensus algorithm optimized for crash-fault tolerant systems.
 
@@ -199,6 +201,39 @@ The `examples/` directory contains comprehensive examples:
 - **[Performance Tuning](examples/performance.rs)** - Optimization techniques
 - **[Fault Tolerance](examples/fault_tolerance.rs)** - Handling failures
 - **[Custom State Machine](examples/custom_state_machine.rs)** - Implementing your own state machine
+
+## 🐳 Docker Support
+
+Run Rabia examples using Docker:
+
+```bash
+# Build the Docker image
+docker build -t rabia-rs/rabia .
+
+# Run the KVStore example
+docker run --rm rabia-rs/rabia kvstore_usage
+
+# Run the consensus cluster example
+docker run --rm rabia-rs/rabia consensus_cluster
+
+# Run performance benchmarks
+docker run --rm rabia-rs/rabia performance_benchmark
+
+# Interactive shell with all examples available
+docker run --rm -it rabia-rs/rabia bash
+```
+
+### Pre-built Images
+
+Pull pre-built images from Docker Hub:
+
+```bash
+# Latest release
+docker pull rabiars/rabia:latest
+
+# Specific version
+docker pull rabiars/rabia:v0.2.0
+```
 
 ## 🧪 Testing
 
