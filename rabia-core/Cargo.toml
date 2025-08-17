@@ -10,7 +10,6 @@ authors.workspace = true
 keywords.workspace = true
 categories.workspace = true
 description = "Core types and traits for the Rabia consensus protocol"
-license = "Apache-2.0"
 
 [dependencies]
 serde = { workspace = true }
