@@ -1,0 +1,17 @@
+[package]
+name = "rabia-network"
+version = "0.1.0"
+edition = "2021"
+description = "Network abstraction layer for Rabia consensus protocol"
+
+[dependencies]
+rabia-core = { path = "../rabia-core" }
+tokio = { workspace = true }
+serde = { workspace = true }
+uuid = { workspace = true }
+tracing = { workspace = true }
+thiserror = { workspace = true }
+async-trait = { workspace = true }
+
+[dev-dependencies]
+tokio-test = { workspace = true }

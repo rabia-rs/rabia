@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["Serializer"],"struct":["BinarySerializer","JsonSerializer","SerializationConfig","SerializerFactory"],"trait":["MessageSerializer"]};

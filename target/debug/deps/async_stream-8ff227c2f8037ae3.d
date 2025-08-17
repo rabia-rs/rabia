@@ -1,0 +1,10 @@
+/Users/sergiyyevtushenko/RustProjects/rabia-rs/target/debug/deps/libasync_stream-8ff227c2f8037ae3.rmeta: /Users/sergiyyevtushenko/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/async-stream-0.3.6/src/lib.rs /Users/sergiyyevtushenko/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/async-stream-0.3.6/src/async_stream.rs /Users/sergiyyevtushenko/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/async-stream-0.3.6/src/next.rs /Users/sergiyyevtushenko/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/async-stream-0.3.6/src/yielder.rs
+
+/Users/sergiyyevtushenko/RustProjects/rabia-rs/target/debug/deps/libasync_stream-8ff227c2f8037ae3.rlib: /Users/sergiyyevtushenko/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/async-stream-0.3.6/src/lib.rs /Users/sergiyyevtushenko/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/async-stream-0.3.6/src/async_stream.rs /Users/sergiyyevtushenko/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/async-stream-0.3.6/src/next.rs /Users/sergiyyevtushenko/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/async-stream-0.3.6/src/yielder.rs
+
+/Users/sergiyyevtushenko/RustProjects/rabia-rs/target/debug/deps/async_stream-8ff227c2f8037ae3.d: /Users/sergiyyevtushenko/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/async-stream-0.3.6/src/lib.rs /Users/sergiyyevtushenko/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/async-stream-0.3.6/src/async_stream.rs /Users/sergiyyevtushenko/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/async-stream-0.3.6/src/next.rs /Users/sergiyyevtushenko/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/async-stream-0.3.6/src/yielder.rs
+
+/Users/sergiyyevtushenko/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/async-stream-0.3.6/src/lib.rs:
+/Users/sergiyyevtushenko/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/async-stream-0.3.6/src/async_stream.rs:
+/Users/sergiyyevtushenko/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/async-stream-0.3.6/src/next.rs:
+/Users/sergiyyevtushenko/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/async-stream-0.3.6/src/yielder.rs:

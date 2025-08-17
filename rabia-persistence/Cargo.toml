@@ -1,0 +1,23 @@
+[package]
+name = "rabia-persistence"
+version = "0.1.0"
+edition = "2021"
+description = "Persistence layer implementation for Rabia consensus protocol"
+
+[dependencies]
+rabia-core = { path = "../rabia-core" }
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+uuid = { workspace = true }
+bytes = { workspace = true }
+crc32fast = { workspace = true }
+tracing = { workspace = true }
+thiserror = { workspace = true }
+anyhow = { workspace = true }
+async-trait = { workspace = true }
+parking_lot = { workspace = true }
+
+[dev-dependencies]
+tokio-test = { workspace = true }
+proptest = { workspace = true }

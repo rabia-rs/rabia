@@ -1,0 +1,1 @@
+window.SIDEBAR_ITEMS = {"enum":["MessageType"],"struct":["DecisionMessage","HeartBeatMessage","NewBatchMessage","PendingBatch","PhaseData","ProposeMessage","ProtocolMessage","QuorumNotificationMessage","SyncRequestMessage","SyncResponseMessage","VoteRound1Message","VoteRound2Message"]};
