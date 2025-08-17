@@ -24,18 +24,11 @@ harness = false
 name = "peak_performance"
 harness = false
 
-[[bench]]
-name = "tcp_network_performance"
-harness = false
-
 [dependencies]
-rabia-core = { path = "../rabia-core" }
-rabia-network = { path = "../rabia-network" }
+rabia-core = { path = "../rabia-core", version = "0.1.0" }
 criterion = { workspace = true }
 serde_json = { workspace = true }
 bincode = { workspace = true }
-tokio = { workspace = true }
-tracing = { workspace = true }
 
 [dev-dependencies]
 criterion = { workspace = true }

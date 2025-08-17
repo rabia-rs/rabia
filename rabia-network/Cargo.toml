@@ -13,18 +13,13 @@ description = "Network abstraction layer for Rabia consensus protocol"
 license = "Apache-2.0"
 
 [dependencies]
-rabia-core = { path = "../rabia-core" }
-tokio = { workspace = true, features = ["net", "io-util"] }
+rabia-core = { path = "../rabia-core", version = "0.1.0" }
+tokio = { workspace = true }
 serde = { workspace = true }
-serde_json = { workspace = true }
 uuid = { workspace = true }
 tracing = { workspace = true }
 thiserror = { workspace = true }
 async-trait = { workspace = true }
-bytes = { workspace = true }
-bincode = { workspace = true }
-futures-util = { workspace = true, features = ["sink"] }
 
 [dev-dependencies]
 tokio-test = { workspace = true }
-tracing-subscriber = { workspace = true }

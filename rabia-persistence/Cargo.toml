@@ -1,19 +1,12 @@
 [package]
 name = "rabia-persistence"
-version.workspace = true
-edition.workspace = true
-license.workspace = true
-repository.workspace = true
-homepage.workspace = true
-documentation.workspace = true
-authors.workspace = true
-keywords.workspace = true
-categories.workspace = true
+version = "0.1.0"
+edition = "2021"
 description = "Persistence layer implementation for Rabia consensus protocol"
 license = "Apache-2.0"
 
 [dependencies]
-rabia-core = { path = "../rabia-core", version = "0.2.1" }
+rabia-core = { path = "../rabia-core", version = "0.1.0" }
 tokio = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }

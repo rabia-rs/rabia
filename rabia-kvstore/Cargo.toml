@@ -12,7 +12,7 @@ categories.workspace = true
 description = "Production-grade key-value store implementation with consensus integration"
 
 [dependencies]
-rabia-core = { path = "../rabia-core", version = "0.2.1" }
+rabia-core = { path = "../rabia-core", version = "0.1.0" }
 tokio = { workspace = true }
 serde = { workspace = true }
 serde_json = { workspace = true }
