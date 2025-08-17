@@ -7,7 +7,7 @@ use std::sync::Arc;
 use std::time::Duration;
 use tokio::time::timeout;
 
-use rabia_kvstore::{KVOperation, KVStore, KVStoreConfig};
+use rabia_kvstore::{KVStore, KVStoreConfig, KVOperation};
 
 /// Test basic KVStore operations
 #[tokio::test]
@@ -23,9 +23,7 @@ async fn test_kvstore_basic_operations() {
         ..Default::default()
     };
 
-    let store = KVStore::new(config)
-        .await
-        .expect("Failed to create KVStore");
+    let store = KVStore::new(config).await.expect("Failed to create KVStore");
 
     // Test SET operation
     let result = store.set("key1", "value1").await;
@@ -34,38 +32,22 @@ async fn test_kvstore_basic_operations() {
     // Test GET operation
     let result = store.get("key1").await;
     assert!(result.is_ok(), "GET operation failed: {:?}", result.err());
-
+    
     let value = result.unwrap();
-    assert_eq!(
-        value,
-        Some("value1".to_string()),
-        "Retrieved value doesn't match"
-    );
+    assert_eq!(value, Some("value1".to_string()), "Retrieved value doesn't match");
 
     // Test GET non-existent key
     let result = store.get("nonexistent").await;
-    assert!(
-        result.is_ok(),
-        "GET non-existent operation failed: {:?}",
-        result.err()
-    );
+    assert!(result.is_ok(), "GET non-existent operation failed: {:?}", result.err());
     assert_eq!(result.unwrap(), None, "Non-existent key should return None");
 
     // Test DELETE operation
     let result = store.delete("key1").await;
-    assert!(
-        result.is_ok(),
-        "DELETE operation failed: {:?}",
-        result.err()
-    );
+    assert!(result.is_ok(), "DELETE operation failed: {:?}", result.err());
 
     // Verify key is deleted
     let result = store.get("key1").await;
-    assert!(
-        result.is_ok(),
-        "GET after DELETE failed: {:?}",
-        result.err()
-    );
+    assert!(result.is_ok(), "GET after DELETE failed: {:?}", result.err());
     assert_eq!(result.unwrap(), None, "Deleted key should return None");
 }
 
@@ -83,9 +65,7 @@ async fn test_kvstore_batch_operations() {
         ..Default::default()
     };
 
-    let store = KVStore::new(config)
-        .await
-        .expect("Failed to create KVStore");
+    let store = KVStore::new(config).await.expect("Failed to create KVStore");
 
     // Create batch operations
     let batch_ops = vec![
@@ -111,20 +91,10 @@ async fn test_kvstore_batch_operations() {
     for i in 1..=3 {
         let key = format!("batch_key{}", i);
         let expected_value = format!("batch_value{}", i);
-
+        
         let result = store.get(&key).await;
-        assert!(
-            result.is_ok(),
-            "GET batch key {} failed: {:?}",
-            key,
-            result.err()
-        );
-        assert_eq!(
-            result.unwrap(),
-            Some(expected_value),
-            "Batch key {} value mismatch",
-            key
-        );
+        assert!(result.is_ok(), "GET batch key {} failed: {:?}", key, result.err());
+        assert_eq!(result.unwrap(), Some(expected_value), "Batch key {} value mismatch", key);
     }
 }
 
@@ -142,11 +112,7 @@ async fn test_kvstore_concurrent_operations() {
         ..Default::default()
     };
 
-    let store = Arc::new(
-        KVStore::new(config)
-            .await
-            .expect("Failed to create KVStore"),
-    );
+    let store = Arc::new(KVStore::new(config).await.expect("Failed to create KVStore"));
 
     let mut handles = Vec::new();
 
@@ -159,27 +125,12 @@ async fn test_kvstore_concurrent_operations() {
 
             // SET operation
             let result = store.set(&key, &value).await;
-            assert!(
-                result.is_ok(),
-                "Concurrent SET {} failed: {:?}",
-                i,
-                result.err()
-            );
+            assert!(result.is_ok(), "Concurrent SET {} failed: {:?}", i, result.err());
 
             // GET operation
             let result = store.get(&key).await;
-            assert!(
-                result.is_ok(),
-                "Concurrent GET {} failed: {:?}",
-                i,
-                result.err()
-            );
-            assert_eq!(
-                result.unwrap(),
-                Some(value),
-                "Concurrent operation {} value mismatch",
-                i
-            );
+            assert!(result.is_ok(), "Concurrent GET {} failed: {:?}", i, result.err());
+            assert_eq!(result.unwrap(), Some(value), "Concurrent operation {} value mismatch", i);
         });
         handles.push(handle);
     }
@@ -195,15 +146,10 @@ async fn test_kvstore_concurrent_operations() {
     for i in 0..10 {
         let key = format!("concurrent_key_{}", i);
         let expected_value = format!("concurrent_value_{}", i);
-
+        
         let result = store.get(&key).await;
         assert!(result.is_ok(), "Final GET {} failed: {:?}", i, result.err());
-        assert_eq!(
-            result.unwrap(),
-            Some(expected_value),
-            "Final value mismatch for key {}",
-            i
-        );
+        assert_eq!(result.unwrap(), Some(expected_value), "Final value mismatch for key {}", i);
     }
 }
 
@@ -221,9 +167,7 @@ async fn test_kvstore_performance() {
         ..Default::default()
     };
 
-    let store = KVStore::new(config)
-        .await
-        .expect("Failed to create KVStore");
+    let store = KVStore::new(config).await.expect("Failed to create KVStore");
 
     let start_time = std::time::Instant::now();
     let operation_count = 1000;
@@ -234,39 +178,23 @@ async fn test_kvstore_performance() {
         let value = format!("perf_value_{}", i);
 
         let result = store.set(&key, &value).await;
-        assert!(
-            result.is_ok(),
-            "Performance SET {} failed: {:?}",
-            i,
-            result.err()
-        );
+        assert!(result.is_ok(), "Performance SET {} failed: {:?}", i, result.err());
 
         if i % 100 == 0 {
             // Occasional GET operations
             let result = store.get(&key).await;
-            assert!(
-                result.is_ok(),
-                "Performance GET {} failed: {:?}",
-                i,
-                result.err()
-            );
+            assert!(result.is_ok(), "Performance GET {} failed: {:?}", i, result.err());
         }
     }
 
     let duration = start_time.elapsed();
     let ops_per_sec = operation_count as f64 / duration.as_secs_f64();
 
-    println!(
-        "KVStore performance: {} operations in {:?} ({:.2} ops/sec)",
-        operation_count, duration, ops_per_sec
-    );
+    println!("KVStore performance: {} operations in {:?} ({:.2} ops/sec)",
+             operation_count, duration, ops_per_sec);
 
     // Reasonable performance expectation (this may need adjustment based on hardware)
-    assert!(
-        ops_per_sec > 100.0,
-        "Performance too low: {:.2} ops/sec",
-        ops_per_sec
-    );
+    assert!(ops_per_sec > 100.0, "Performance too low: {:.2} ops/sec", ops_per_sec);
 }
 
 /// Test KVStore error handling
@@ -283,21 +211,14 @@ async fn test_kvstore_error_handling() {
         ..Default::default()
     };
 
-    let store = KVStore::new(config)
-        .await
-        .expect("Failed to create KVStore");
+    let store = KVStore::new(config).await.expect("Failed to create KVStore");
 
     // Fill up the store
     for i in 0..2 {
         let key = format!("key_{}", i);
         let value = format!("value_{}", i);
         let result = store.set(&key, &value).await;
-        assert!(
-            result.is_ok(),
-            "SET {} within capacity failed: {:?}",
-            i,
-            result.err()
-        );
+        assert!(result.is_ok(), "SET {} within capacity failed: {:?}", i, result.err());
     }
 
     // Try to exceed capacity
@@ -330,21 +251,14 @@ async fn test_kvstore_mixed_operations() {
         ..Default::default()
     };
 
-    let store = KVStore::new(config)
-        .await
-        .expect("Failed to create KVStore");
+    let store = KVStore::new(config).await.expect("Failed to create KVStore");
 
     // Set initial values
     for i in 0..10 {
         let key = format!("mixed_key_{}", i);
         let value = format!("initial_value_{}", i);
         let result = store.set(&key, &value).await;
-        assert!(
-            result.is_ok(),
-            "Initial SET {} failed: {:?}",
-            i,
-            result.err()
-        );
+        assert!(result.is_ok(), "Initial SET {} failed: {:?}", i, result.err());
     }
 
     // Mix of operations: update some, delete some, read some
@@ -355,12 +269,7 @@ async fn test_kvstore_mixed_operations() {
                 let key = format!("mixed_key_{}", i);
                 let value = format!("updated_value_{}", i);
                 let result = store.set(&key, &value).await;
-                assert!(
-                    result.is_ok(),
-                    "Update SET {} failed: {:?}",
-                    i,
-                    result.err()
-                );
+                assert!(result.is_ok(), "Update SET {} failed: {:?}", i, result.err());
             }
             1 => {
                 // Delete

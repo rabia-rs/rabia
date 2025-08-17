@@ -5,28 +5,25 @@
 
 use std::collections::HashSet;
 use std::time::Duration;
-use tokio::{
-    sync::{mpsc, oneshot},
-    time::sleep,
-};
+use tokio::{sync::mpsc, time::sleep};
 use tracing::{info, warn};
 
 use rabia_core::{
     messages::{ProposeMessage, ProtocolMessage},
     network::ClusterConfig,
     state_machine::InMemoryStateMachine,
-    validation::Validator,
-    Command, CommandBatch, NodeId, PhaseId, StateValue,
+    Command, CommandBatch, NodeId, PhaseId, StateValue, Validator,
 };
-use rabia_engine::{CommandRequest, EngineCommand, RabiaConfig, RabiaEngine};
+use rabia_engine::{CommandRequest, EngineCommand, EngineCommandSender, RabiaConfig, RabiaEngine};
 use rabia_network::InMemoryNetwork;
 use rabia_persistence::InMemoryPersistence;
 
 /// Represents a node in the consensus cluster
 struct ClusterNode {
     node_id: NodeId,
+    #[allow(dead_code)]
     engine: Option<RabiaEngine<InMemoryStateMachine, InMemoryNetwork, InMemoryPersistence>>,
-    command_sender: mpsc::UnboundedSender<EngineCommand>,
+    command_sender: EngineCommandSender,
     is_leader: bool,
     is_faulty: bool,
 }
@@ -68,8 +65,9 @@ impl ClusterNode {
             return Ok(());
         }
 
-        let (response_tx, _response_rx) = oneshot::channel();
+        let (response_tx, _response_rx) = tokio::sync::oneshot::channel();
         let request = CommandRequest { batch, response_tx };
+
         self.command_sender
             .send(EngineCommand::ProcessBatch(request))?;
         Ok(())
@@ -89,6 +87,7 @@ impl ClusterNode {
 /// Represents the entire consensus cluster
 struct ConsensusCluster {
     nodes: Vec<ClusterNode>,
+    #[allow(dead_code)]
     cluster_config: ClusterConfig,
 }
 

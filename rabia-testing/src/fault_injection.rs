@@ -43,7 +43,7 @@ pub enum FaultType {
     },
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct TestScenario {
     pub name: String,
     pub description: String,
@@ -54,7 +54,7 @@ pub struct TestScenario {
     pub timeout: Duration,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum ExpectedOutcome {
     AllCommitted,
     PartialCommitment { min_committed: usize },
@@ -226,15 +226,19 @@ impl ConsensusTestHarness {
                     "Injecting packet loss rate {} (duration: {:?})",
                     rate, duration
                 );
-                let mut conditions = NetworkConditions::default();
-                conditions.packet_loss_rate = rate;
+                let conditions = NetworkConditions {
+                    packet_loss_rate: rate,
+                    ..Default::default()
+                };
                 self.simulator.update_conditions(conditions.clone()).await;
 
                 let sim = self.simulator.clone();
                 tokio::spawn(async move {
                     sleep(duration).await;
-                    let mut restore_conditions = NetworkConditions::default();
-                    restore_conditions.packet_loss_rate = 0.0;
+                    let restore_conditions = NetworkConditions {
+                        packet_loss_rate: 0.0,
+                        ..Default::default()
+                    };
                     sim.update_conditions(restore_conditions).await;
                 });
             }
@@ -246,9 +250,11 @@ impl ConsensusTestHarness {
                     max.as_millis(),
                     duration
                 );
-                let mut conditions = NetworkConditions::default();
-                conditions.latency_min = min;
-                conditions.latency_max = max;
+                let conditions = NetworkConditions {
+                    latency_min: min,
+                    latency_max: max,
+                    ..Default::default()
+                };
                 self.simulator.update_conditions(conditions.clone()).await;
 
                 let sim = self.simulator.clone();
@@ -293,11 +299,9 @@ impl ConsensusTestHarness {
                 .send(EngineCommand::GetStatistics(stats_tx))
                 .is_ok()
             {
-                if let Ok(stats) = tokio::time::timeout(Duration::from_millis(100), stats_rx).await
+                if let Ok(Ok(stats)) = tokio::time::timeout(Duration::from_millis(100), stats_rx).await
                 {
-                    if let Ok(stats) = stats {
-                        node_stats.insert(node_id, stats);
-                    }
+                    node_stats.insert(node_id, stats);
                 }
             }
         }

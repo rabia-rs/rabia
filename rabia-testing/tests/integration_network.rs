@@ -9,12 +9,12 @@ use std::time::Duration;
 use tokio::time::timeout;
 
 use rabia_core::{
-    messages::{HeartBeatMessage, MessageType, ProtocolMessage},
+    messages::{ProtocolMessage, MessageType, HeartBeatMessage},
     network::NetworkTransport,
     NodeId, PhaseId,
 };
 use rabia_network::InMemoryNetwork;
-use rabia_testing::network_sim::{NetworkConditions, NetworkSimulator, SimulatedNetwork};
+use rabia_testing::network_sim::{NetworkSimulator, SimulatedNetwork, NetworkConditions};
 
 /// Test basic InMemoryNetwork functionality
 #[tokio::test]
@@ -40,19 +40,11 @@ async fn test_inmemory_network_basic() {
 
     // Test getting connected nodes
     let result = network1.get_connected_nodes().await;
-    assert!(
-        result.is_ok(),
-        "get_connected_nodes failed: {:?}",
-        result.err()
-    );
+    assert!(result.is_ok(), "get_connected_nodes failed: {:?}", result.err());
 
     // Test connectivity check
     let result = network1.is_connected(node2_id).await;
-    assert!(
-        result.is_ok(),
-        "is_connected check failed: {:?}",
-        result.err()
-    );
+    assert!(result.is_ok(), "is_connected check failed: {:?}", result.err());
 }
 
 /// Test network disconnect and reconnect
@@ -87,7 +79,7 @@ async fn test_simulated_network_basic() {
     let node1_id = NodeId::new();
     let node2_id = NodeId::new();
 
-    let network1 = SimulatedNetwork::new(node1_id, simulator.clone()).await;
+    let mut network1 = SimulatedNetwork::new(node1_id, simulator.clone()).await;
     let mut network2 = SimulatedNetwork::new(node2_id, simulator.clone()).await;
 
     // Connect nodes
@@ -125,15 +117,12 @@ async fn test_simulated_network_basic() {
 
     // Try to receive message (with timeout)
     let receive_result = timeout(Duration::from_millis(100), network2.receive()).await;
-
+    
     match receive_result {
         Ok(Ok((from, received_msg))) => {
             assert_eq!(from, node1_id, "Message sender mismatch");
             // Basic validation that we received a message
-            assert!(matches!(
-                received_msg.message_type,
-                MessageType::HeartBeat(_)
-            ));
+            assert!(matches!(received_msg.message_type, MessageType::HeartBeat(_)));
         }
         Ok(Err(e)) => {
             println!("Receive failed (expected in some cases): {:?}", e);
@@ -160,7 +149,7 @@ async fn test_network_packet_loss() {
     let node1_id = NodeId::new();
     let node2_id = NodeId::new();
 
-    let network1 = SimulatedNetwork::new(node1_id, simulator.clone()).await;
+    let mut network1 = SimulatedNetwork::new(node1_id, simulator.clone()).await;
     let mut network2 = SimulatedNetwork::new(node2_id, simulator.clone()).await;
 
     // Connect nodes
@@ -224,25 +213,16 @@ async fn test_network_packet_loss() {
         }
     }
 
-    println!(
-        "Packet loss test: sent={}, received={}, loss_rate={:.2}%",
-        messages_sent,
-        messages_received,
-        (1.0 - messages_received as f64 / messages_sent as f64) * 100.0
-    );
+    println!("Packet loss test: sent={}, received={}, loss_rate={:.2}%", 
+             messages_sent, messages_received, 
+             (1.0 - messages_received as f64 / messages_sent as f64) * 100.0);
 
     // With 50% packet loss, we expect significantly fewer messages to be received
-    assert!(
-        messages_received < messages_sent,
-        "Expected packet loss to reduce received messages"
-    );
+    assert!(messages_received < messages_sent, "Expected packet loss to reduce received messages");
 
     // Get network statistics
     let stats = simulator.get_stats().await;
-    assert!(
-        stats.messages_dropped > 0,
-        "Expected some messages to be dropped"
-    );
+    assert!(stats.messages_dropped > 0, "Expected some messages to be dropped");
 
     // Shutdown
     simulator.shutdown().await;
@@ -262,7 +242,7 @@ async fn test_network_broadcast() {
     let node2_id = NodeId::new();
     let node3_id = NodeId::new();
 
-    let network1 = SimulatedNetwork::new(node1_id, simulator.clone()).await;
+    let mut network1 = SimulatedNetwork::new(node1_id, simulator.clone()).await;
     let mut network2 = SimulatedNetwork::new(node2_id, simulator.clone()).await;
     let mut network3 = SimulatedNetwork::new(node3_id, simulator.clone()).await;
 
@@ -303,7 +283,7 @@ async fn test_network_broadcast() {
 
     // Check if nodes 2 and 3 received the broadcast
     let mut receivers = Vec::new();
-
+    
     let receive_result2 = timeout(Duration::from_millis(100), network2.receive()).await;
     if let Ok(Ok((from, _))) = receive_result2 {
         if from == node1_id {
@@ -337,7 +317,7 @@ async fn test_network_partition() {
     let node1_id = NodeId::new();
     let node2_id = NodeId::new();
 
-    let network1 = SimulatedNetwork::new(node1_id, simulator.clone()).await;
+    let mut network1 = SimulatedNetwork::new(node1_id, simulator.clone()).await;
     let mut network2 = SimulatedNetwork::new(node2_id, simulator.clone()).await;
 
     // Connect nodes
@@ -351,9 +331,7 @@ async fn test_network_partition() {
     // Create partition
     let mut partitioned_nodes = HashSet::new();
     partitioned_nodes.insert(node1_id);
-    simulator
-        .create_partition(partitioned_nodes, Duration::from_millis(500))
-        .await;
+    simulator.create_partition(partitioned_nodes, Duration::from_millis(500)).await;
 
     // Start network simulation
     let sim_handle = {
@@ -375,31 +353,22 @@ async fn test_network_partition() {
     );
 
     let result = network1.send_to(node2_id, message).await;
-    assert!(
-        result.is_ok(),
-        "send_to failed during partition: {:?}",
-        result.err()
-    );
+    assert!(result.is_ok(), "send_to failed during partition: {:?}", result.err());
 
     // Wait for potential delivery (should be dropped due to partition)
     tokio::time::sleep(Duration::from_millis(100)).await;
 
     // Try to receive (should timeout due to partition)
     let receive_result = timeout(Duration::from_millis(100), network2.receive()).await;
-    assert!(
-        receive_result.is_err(),
-        "Expected timeout due to network partition"
-    );
+    assert!(receive_result.is_err(), "Expected timeout due to network partition");
 
     // Wait for partition to heal
     tokio::time::sleep(Duration::from_millis(600)).await;
 
     // Verify partition is healed by checking network stats
     let stats = simulator.get_stats().await;
-    println!(
-        "Network stats: sent={}, delivered={}, dropped={}",
-        stats.messages_sent, stats.messages_delivered, stats.messages_dropped
-    );
+    println!("Network stats: sent={}, delivered={}, dropped={}", 
+             stats.messages_sent, stats.messages_delivered, stats.messages_dropped);
 
     // Shutdown
     simulator.shutdown().await;

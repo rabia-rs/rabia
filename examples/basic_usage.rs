@@ -11,21 +11,15 @@ use tokio::sync::mpsc;
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
     tracing_subscriber::fmt::init();
 
-    // Create cluster configuration with 3 nodes (minimum for consensus)
-    let node1_id = NodeId::new();
-    let node2_id = NodeId::new();
-    let node3_id = NodeId::new();
-
+    // Create node configuration
+    let node_id = NodeId::new();
     let mut all_nodes = HashSet::new();
-    all_nodes.insert(node1_id);
-    all_nodes.insert(node2_id);
-    all_nodes.insert(node3_id);
+    all_nodes.insert(node_id);
+    let cluster_config = ClusterConfig::new(node_id, all_nodes);
 
-    let cluster_config = ClusterConfig::new(node1_id, all_nodes);
-
-    // Create components for the primary node
+    // Create components
     let state_machine = InMemoryStateMachine::new();
-    let network = InMemoryNetwork::new(node1_id);
+    let network = InMemoryNetwork::new(node_id);
     let persistence = InMemoryPersistence::new();
     let config = RabiaConfig::default();
 
@@ -34,7 +28,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Create and start the consensus engine
     let _engine = RabiaEngine::new(
-        node1_id,
+        node_id,
         config,
         cluster_config,
         state_machine,
@@ -43,13 +37,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         cmd_rx,
     );
 
-    println!(
-        "🚀 Starting Rabia consensus engine for primary node {} in 3-node cluster",
-        node1_id
-    );
-    println!("   - Node 1 (primary): {}", node1_id);
-    println!("   - Node 2: {}", node2_id);
-    println!("   - Node 3: {}", node3_id);
+    println!("🚀 Starting Rabia consensus engine for node {}", node_id);
 
     // In a real application, you would run the engine in a separate task
     // and use the command channel to interact with it

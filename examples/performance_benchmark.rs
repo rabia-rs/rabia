@@ -10,7 +10,7 @@ use tokio::time::sleep;
 use tracing::info;
 
 use rabia_core::{
-    batching::BatchProcessor,
+    batching::{BatchConfig, BatchProcessor},
     memory_pool::{MemoryPool, PoolConfig},
     serialization::{BinarySerializer, MessageSerializer},
     Command, CommandBatch,
@@ -98,7 +98,7 @@ impl PerformanceBenchmark {
         Self {
             config,
             memory_pool: Arc::new(MemoryPool::new(PoolConfig::default())),
-            serializer: Arc::new(BinarySerializer::default()),
+            serializer: Arc::new(BinarySerializer),
         }
     }
 
@@ -220,6 +220,13 @@ impl PerformanceBenchmark {
 
     /// Benchmark command batch creation and processing
     async fn benchmark_command_batching(&self) -> BenchmarkResults {
+        let _batch_config = BatchConfig {
+            max_batch_size: self.config.batch_size,
+            max_batch_delay: Duration::from_millis(10),
+            buffer_capacity: 1000,
+            adaptive: false,
+        };
+
         let _batch_processor = BatchProcessor::new();
         let value = "x".repeat(self.config.value_size);
 
@@ -301,7 +308,7 @@ impl PerformanceBenchmark {
         } else {
             // JSON serialization for comparison
             for _ in 0..100 {
-                let _serialized = self.serializer.serialize(&batch).unwrap();
+                let _serialized = serde_json::to_vec(&batch).unwrap();
             }
         }
 

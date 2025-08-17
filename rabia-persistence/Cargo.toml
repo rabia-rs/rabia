@@ -10,6 +10,7 @@ authors.workspace = true
 keywords.workspace = true
 categories.workspace = true
 description = "Persistence layer implementation for Rabia consensus protocol"
+license = "Apache-2.0"
 
 [dependencies]
 rabia-core = { path = "../rabia-core", version = "0.2.1" }
