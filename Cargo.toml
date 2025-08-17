@@ -6,6 +6,7 @@ members = [
     "rabia-persistence",
     "rabia-testing",
     "rabia-kvstore",
+    "rabia-leader",
     "examples",
     "benchmarks"
 ]

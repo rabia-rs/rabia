@@ -221,10 +221,17 @@ jobs:
 
     - name: Check crates.io compatibility
       run: |
-        # Check each publishable crate
-        for crate in rabia-core rabia-engine rabia-network rabia-persistence rabia-kvstore; do
-          echo "Checking publish compatibility for $crate"
-          cargo publish --dry-run --package $crate --all-features
+        # Only check the core crate since others depend on it and won't work with --dry-run
+        # until rabia-core is actually published to crates.io
+        echo "Checking publish compatibility for rabia-core (foundation crate)"
+        cargo publish --dry-run --package rabia-core --all-features
+        
+        # For other crates, just verify they can be packaged
+        for crate in rabia-engine rabia-network rabia-persistence rabia-kvstore; do
+          echo "Checking package format for $crate"
+          cd $crate
+          cargo package --list > /dev/null
+          cd ..
         done
 
     - name: Verify changelog

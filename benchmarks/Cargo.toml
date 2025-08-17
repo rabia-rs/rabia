@@ -25,7 +25,7 @@ name = "peak_performance"
 harness = false
 
 [dependencies]
-rabia-core = { path = "../rabia-core", version = "0.1.0" }
+rabia-core = { path = "../rabia-core", version = "0.2.0" }
 criterion = { workspace = true }
 serde_json = { workspace = true }
 bincode = { workspace = true }

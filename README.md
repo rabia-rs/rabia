@@ -40,6 +40,8 @@ rabia-rs/
 ├── rabia-engine/       # Consensus engine implementation  
 ├── rabia-network/      # Network transport abstractions
 ├── rabia-persistence/  # Persistence layer implementations
+├── rabia-kvstore/      # Production-grade key-value store
+├── rabia-leader/       # Leader management and cluster coordination
 ├── rabia-testing/      # Testing utilities and network simulation
 ├── examples/           # Usage examples and tutorials
 └── benchmarks/         # Performance benchmarks
@@ -55,15 +57,15 @@ rabia-rs/
 │ • Voting Logic  │    │ • Node Discovery│    │ • Snapshots     │
 │ • State Sync    │    │ • Fault Detect  │    │ • Recovery      │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
-         │
-         ▼
-┌─────────────────┐
-│  State Machine  │
-│                 │
-│ • Command Exec  │
-│ • Deterministic │
-│ • Snapshotting  │
-└─────────────────┘
+         │                        │
+         ▼                        ▼
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│  State Machine  │    │ Leader Manager  │────│    KV Store     │
+│                 │    │                 │    │                 │
+│ • Command Exec  │    │ • Elections     │    │ • Concurrent    │
+│ • Deterministic │    │ • Health Mon    │    │ • Notifications │
+│ • Snapshotting  │    │ • Topology      │    │ • Snapshots     │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
 ```
 
 ## 🚀 Quick Start
@@ -72,8 +74,10 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-rabia-core = "0.1"
-rabia-engine = "0.1" 
+rabia-core = "0.2"
+rabia-engine = "0.2" 
+rabia-kvstore = "0.2"  # Optional: for key-value storage
+rabia-leader = "0.2"   # Optional: for leader management
 tokio = { version = "1.0", features = ["full"] }
 ```
 
@@ -156,6 +160,107 @@ let serializer = Serializer::binary();
 let message = create_consensus_message();
 let serialized = serializer.serialize_message(&message)?;
 let deserialized = serializer.deserialize_message(&serialized)?;
+```
+
+### Production KV Store
+
+```rust
+use rabia_kvstore::{KVStore, KVStoreConfig, NotificationFilter};
+use std::time::Duration;
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Configure high-performance KV store
+    let config = KVStoreConfig {
+        max_entries: 1_000_000,
+        max_memory_mb: 1024,
+        enable_notifications: true,
+        snapshot_interval: Duration::from_secs(300),
+        ..Default::default()
+    };
+    
+    let store = KVStore::new(config).await?;
+    
+    // Subscribe to change notifications
+    let (sub_id, mut notifications) = store
+        .subscribe(NotificationFilter::KeyPrefix("user:".to_string()))
+        .await?;
+    
+    // Concurrent operations
+    tokio::spawn(async move {
+        while let Some(notification) = notifications.recv().await {
+            println!("Key changed: {:?}", notification);
+        }
+    });
+    
+    // High-performance operations
+    store.set("user:1".to_string(), "data".into()).await?;
+    let value = store.get("user:1").await?;
+    
+    // Atomic transactions
+    store.transaction(|tx| async move {
+        tx.set("key1".to_string(), "value1".into()).await?;
+        tx.set("key2".to_string(), "value2".into()).await?;
+        Ok(())
+    }).await?;
+    
+    Ok(())
+}
+```
+
+### Leader Management & Cluster Coordination
+
+```rust
+use rabia_leader::{
+    LeaderManager, LeaderConfig, 
+    LeaderNotificationBus, NotificationFilter
+};
+use std::time::Duration;
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Configure leader management
+    let config = LeaderConfig {
+        heartbeat_interval: Duration::from_millis(1000),
+        election_timeout: Duration::from_millis(5000),
+        min_healthy_nodes: 3,
+        auto_failover: true,
+        leadership_priority: 100,
+    };
+    
+    let leader_manager = std::sync::Arc::new(LeaderManager::new(config).await?);
+    let notification_bus = LeaderNotificationBus::new();
+    
+    // Subscribe to leadership events
+    let (sub_id, mut leadership_events) = notification_bus
+        .subscribe(NotificationFilter::Leadership)
+        .await?;
+    
+    // Handle leadership changes
+    tokio::spawn(async move {
+        while let Some(event) = leadership_events.recv().await {
+            match event {
+                LeaderNotification::Leadership(LeadershipChange::LeaderElected { node_id, term, .. }) => {
+                    println!("New leader elected: {} (term {})", node_id, term);
+                }
+                LeaderNotification::Topology(TopologyChange::QuorumChanged { has_quorum, .. }) => {
+                    println!("Cluster quorum: {}", has_quorum);
+                }
+                _ => {}
+            }
+        }
+    });
+    
+    // Start leader management
+    leader_manager.clone().start().await?;
+    
+    // Check leadership status
+    if leader_manager.is_leader().await {
+        println!("This node is the cluster leader");
+    }
+    
+    Ok(())
+}
 ```
 
 ## 🔧 Advanced Features

@@ -1,5 +1,5 @@
 [package]
-name = "rabia-kvstore"
+name = "rabia-leader"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
@@ -9,22 +9,22 @@ documentation.workspace = true
 authors.workspace = true
 keywords.workspace = true
 categories.workspace = true
-description = "Production-grade key-value store implementation with consensus integration"
+description = "Leader management and coordination for Rabia consensus clusters"
 
 [dependencies]
 rabia-core = { path = "../rabia-core", version = "0.2.0" }
 tokio = { workspace = true }
 serde = { workspace = true }
-serde_json = { workspace = true }
-bytes = { workspace = true }
-dashmap = { workspace = true }
-parking_lot = { workspace = true }
-tracing = { workspace = true }
-async-trait = { workspace = true }
 uuid = { workspace = true }
+tracing = { workspace = true }
 thiserror = { workspace = true }
-crossbeam-channel = "0.5"
+anyhow = { workspace = true }
+async-trait = { workspace = true }
+parking_lot = { workspace = true }
+crossbeam-channel = { workspace = true }
+dashmap = { workspace = true }
+rand = { workspace = true }
 
 [dev-dependencies]
 tokio-test = { workspace = true }
-tracing-subscriber = { workspace = true }
+proptest = { workspace = true }
