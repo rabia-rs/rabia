@@ -5,11 +5,13 @@ use tokio::sync::mpsc;
 use tokio::time::sleep;
 use tracing::{info, warn};
 
-use rabia_core::{NodeId, CommandBatch, Command, network::ClusterConfig, state_machine::InMemoryStateMachine};
-use rabia_engine::{RabiaEngine, RabiaConfig, EngineCommand, EngineCommandSender};
+use rabia_core::{
+    network::ClusterConfig, state_machine::InMemoryStateMachine, Command, CommandBatch, NodeId,
+};
+use rabia_engine::{EngineCommand, EngineCommandSender, RabiaConfig, RabiaEngine};
 use rabia_persistence::InMemoryPersistence;
 
-use crate::network_sim::{NetworkSimulator, SimulatedNetwork, NetworkConditions};
+use crate::network_sim::{NetworkConditions, NetworkSimulator, SimulatedNetwork};
 
 #[derive(Debug, Clone)]
 pub struct PerformanceTest {
@@ -44,6 +46,7 @@ pub struct PerformanceBenchmark {
 }
 
 struct BenchmarkNode {
+    #[allow(dead_code)]
     node_id: NodeId,
     engine_tx: EngineCommandSender,
     #[allow(dead_code)]
@@ -54,6 +57,7 @@ struct BenchmarkNode {
 struct OperationResult {
     latency: Duration,
     success: bool,
+    #[allow(dead_code)]
     timestamp: Instant,
 }
 
@@ -117,7 +121,9 @@ impl PerformanceBenchmark {
         info!("Running performance test: {}", test.name);
 
         // Configure network conditions
-        self.simulator.update_conditions(test.network_conditions.clone()).await;
+        self.simulator
+            .update_conditions(test.network_conditions.clone())
+            .await;
 
         let start_time = Instant::now();
         let mut operation_results = Vec::new();
@@ -125,9 +131,8 @@ impl PerformanceBenchmark {
         let mut failed_operations = 0;
 
         // Calculate timing
-        let operations_interval = Duration::from_nanos(
-            (1_000_000_000 / test.operations_per_second as u64).max(1)
-        );
+        let operations_interval =
+            Duration::from_nanos((1_000_000_000 / test.operations_per_second as u64).max(1));
 
         let mut operation_count = 0;
         let node_ids: Vec<NodeId> = self.nodes.keys().copied().collect();
@@ -135,7 +140,7 @@ impl PerformanceBenchmark {
         // Run performance test
         while operation_count < test.total_operations && start_time.elapsed() < test.test_duration {
             let batch_start = Instant::now();
-            
+
             // Create batch of operations
             let mut batch_commands = Vec::new();
             for i in 0..test.batch_size.min(test.total_operations - operation_count) {
@@ -145,20 +150,20 @@ impl PerformanceBenchmark {
 
             if !batch_commands.is_empty() {
                 let batch = CommandBatch::new(batch_commands);
-                
+
                 // Select node to submit to (round-robin)
                 let node_id = node_ids[operation_count % node_ids.len()];
-                
+
                 if let Some(node) = self.nodes.get(&node_id) {
                     let (response_tx, response_rx) = tokio::sync::oneshot::channel();
-                    
+
                     let cmd = EngineCommand::ProcessBatch(rabia_engine::CommandRequest {
                         batch,
                         response_tx,
                     });
 
                     let submit_time = Instant::now();
-                    
+
                     if node.engine_tx.send(cmd).is_ok() {
                         // Wait for response with timeout
                         match tokio::time::timeout(Duration::from_secs(5), response_rx).await {
@@ -266,13 +271,13 @@ impl PerformanceBenchmark {
         // In a real implementation, we'd use system metrics
         let base_memory_per_node = 10.0; // MB
         let network_memory = 5.0; // MB for network simulation
-        
+
         (self.nodes.len() as f64 * base_memory_per_node) + network_memory
     }
 
     pub async fn shutdown(&self) {
         self.simulator.shutdown().await;
-        
+
         for node in self.nodes.values() {
             let _ = node.engine_tx.send(EngineCommand::Shutdown);
         }
@@ -291,7 +296,6 @@ pub fn create_performance_tests() -> Vec<PerformanceTest> {
             test_duration: Duration::from_secs(30),
             network_conditions: NetworkConditions::default(),
         },
-
         PerformanceTest {
             name: "High Load".to_string(),
             description: "High throughput test with larger batches".to_string(),
@@ -302,7 +306,6 @@ pub fn create_performance_tests() -> Vec<PerformanceTest> {
             test_duration: Duration::from_secs(60),
             network_conditions: NetworkConditions::default(),
         },
-
         PerformanceTest {
             name: "Network Latency Impact".to_string(),
             description: "Performance with realistic network latency".to_string(),
@@ -319,7 +322,6 @@ pub fn create_performance_tests() -> Vec<PerformanceTest> {
                 bandwidth_limit: None,
             },
         },
-
         PerformanceTest {
             name: "Packet Loss Resilience".to_string(),
             description: "Performance under moderate packet loss".to_string(),
@@ -336,7 +338,6 @@ pub fn create_performance_tests() -> Vec<PerformanceTest> {
                 bandwidth_limit: None,
             },
         },
-
         PerformanceTest {
             name: "Large Cluster".to_string(),
             description: "Scalability test with larger cluster".to_string(),
@@ -353,7 +354,6 @@ pub fn create_performance_tests() -> Vec<PerformanceTest> {
                 bandwidth_limit: None,
             },
         },
-
         PerformanceTest {
             name: "Small Batches".to_string(),
             description: "Performance with small batch sizes".to_string(),
@@ -373,24 +373,26 @@ pub async fn run_all_performance_tests(config: RabiaConfig) -> Vec<PerformanceRe
 
     for test in tests {
         info!("Starting performance test: {}", test.name);
-        
+
         // Create fresh benchmark instance for each test
         let benchmark = PerformanceBenchmark::new(test.node_count, config.clone()).await;
-        
+
         // Wait for nodes to initialize
         sleep(Duration::from_millis(500)).await;
-        
+
         let result = benchmark.run_performance_test(test).await;
-        
-        info!("Test '{}' completed: {:.2} ops/sec, {:.2}ms avg latency", 
-               result.test_name, 
-               result.throughput_ops_per_sec,
-               result.average_latency.as_millis());
-        
+
+        info!(
+            "Test '{}' completed: {:.2} ops/sec, {:.2}ms avg latency",
+            result.test_name,
+            result.throughput_ops_per_sec,
+            result.average_latency.as_millis()
+        );
+
         results.push(result);
-        
+
         benchmark.shutdown().await;
-        
+
         // Brief pause between tests
         sleep(Duration::from_millis(1000)).await;
     }
@@ -400,8 +402,10 @@ pub async fn run_all_performance_tests(config: RabiaConfig) -> Vec<PerformanceRe
 
 pub fn print_performance_summary(results: &[PerformanceResult]) {
     println!("\n=== PERFORMANCE TEST SUMMARY ===");
-    println!("{:<25} {:<12} {:<15} {:<15} {:<15} {:<15}", 
-             "Test Name", "Ops/Sec", "Avg Latency", "P95 Latency", "P99 Latency", "Success Rate");
+    println!(
+        "{:<25} {:<12} {:<15} {:<15} {:<15} {:<15}",
+        "Test Name", "Ops/Sec", "Avg Latency", "P95 Latency", "P99 Latency", "Success Rate"
+    );
     println!("{}", "-".repeat(100));
 
     for result in results {
@@ -411,13 +415,15 @@ pub fn print_performance_summary(results: &[PerformanceResult]) {
             0.0
         };
 
-        println!("{:<25} {:<12.1} {:<15.2} {:<15.2} {:<15.2} {:<15.1}%", 
-                 result.test_name,
-                 result.throughput_ops_per_sec,
-                 result.average_latency.as_millis(),
-                 result.p95_latency.as_millis(),
-                 result.p99_latency.as_millis(),
-                 success_rate);
+        println!(
+            "{:<25} {:<12.1} {:<15.2} {:<15.2} {:<15.2} {:<15.1}%",
+            result.test_name,
+            result.throughput_ops_per_sec,
+            result.average_latency.as_millis(),
+            result.p95_latency.as_millis(),
+            result.p99_latency.as_millis(),
+            success_rate
+        );
     }
 
     println!("\n=== NETWORK STATISTICS ===");
@@ -426,8 +432,14 @@ pub fn print_performance_summary(results: &[PerformanceResult]) {
         println!("Total Messages Sent: {}", stats.messages_sent);
         println!("Total Messages Delivered: {}", stats.messages_delivered);
         println!("Total Messages Dropped: {}", stats.messages_dropped);
-        println!("Average Network Latency: {:.2}ms", stats.average_latency().as_millis());
-        println!("Network Throughput: {:.2} Mbps", stats.throughput_mbps(result.test_duration));
+        println!(
+            "Average Network Latency: {:.2}ms",
+            stats.average_latency().as_millis()
+        );
+        println!(
+            "Network Throughput: {:.2} Mbps",
+            stats.throughput_mbps(result.test_duration)
+        );
     }
 }
 
@@ -452,7 +464,11 @@ mod tests {
             network_conditions: NetworkConditions::default(),
         };
 
-        let result = timeout(Duration::from_secs(15), benchmark.run_performance_test(test)).await;
+        let result = timeout(
+            Duration::from_secs(15),
+            benchmark.run_performance_test(test),
+        )
+        .await;
         assert!(result.is_ok());
 
         let result = result.unwrap();
@@ -462,7 +478,7 @@ mod tests {
         benchmark.shutdown().await;
     }
 
-    #[tokio::test] 
+    #[tokio::test]
     async fn test_performance_with_latency() {
         let config = RabiaConfig::default();
         let benchmark = PerformanceBenchmark::new(3, config).await;
@@ -484,7 +500,11 @@ mod tests {
             },
         };
 
-        let result = timeout(Duration::from_secs(15), benchmark.run_performance_test(test)).await;
+        let result = timeout(
+            Duration::from_secs(15),
+            benchmark.run_performance_test(test),
+        )
+        .await;
         assert!(result.is_ok());
 
         let result = result.unwrap();

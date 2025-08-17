@@ -1,8 +1,8 @@
+use crate::state_machine::Snapshot;
+use crate::{NodeId, PhaseId, Result};
 use async_trait::async_trait;
 use bytes::Bytes;
 use serde::{Deserialize, Serialize};
-use crate::{Result, NodeId, PhaseId};
-use crate::state_machine::Snapshot;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PersistedState {
@@ -48,7 +48,7 @@ impl PersistedState {
     pub fn calculate_checksum(&self) -> u32 {
         let mut temp_state = self.clone();
         temp_state.checksum = 0;
-        
+
         let serialized = serde_json::to_vec(&temp_state).unwrap_or_default();
         crc32fast::hash(&serialized)
     }
@@ -109,7 +109,7 @@ impl WriteAheadLogEntry {
     pub fn calculate_checksum(&self) -> u32 {
         let mut temp_entry = self.clone();
         temp_entry.checksum = 0;
-        
+
         let serialized = serde_json::to_vec(&temp_entry).unwrap_or_default();
         crc32fast::hash(&serialized)
     }
@@ -159,7 +159,7 @@ impl Default for PersistenceConfig {
     fn default() -> Self {
         Self {
             wal_segment_size: 64 * 1024 * 1024, // 64MB
-            checkpoint_interval: 3600, // 1 hour in seconds
+            checkpoint_interval: 3600,          // 1 hour in seconds
             max_checkpoints: 10,
             fsync_on_write: true,
             compression_enabled: true,

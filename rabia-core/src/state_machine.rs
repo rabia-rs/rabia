@@ -1,7 +1,7 @@
+use crate::{Command, Result};
 use async_trait::async_trait;
 use bytes::Bytes;
 use serde::{Deserialize, Serialize};
-use crate::{Result, Command};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Snapshot {
@@ -78,8 +78,11 @@ impl StateMachine for InMemoryStateMachine {
 
     async fn apply_command(&mut self, command: &Command) -> Result<Bytes> {
         let command_str = String::from_utf8_lossy(&command.data);
-        let parts: Vec<String> = command_str.split_whitespace().map(|s| s.to_string()).collect();
-        
+        let parts: Vec<String> = command_str
+            .split_whitespace()
+            .map(|s| s.to_string())
+            .collect();
+
         if parts.is_empty() {
             return Ok(Bytes::from("ERROR: Empty command"));
         }

@@ -3,6 +3,7 @@ name = "rabia-persistence"
 version = "0.1.0"
 edition = "2021"
 description = "Persistence layer implementation for Rabia consensus protocol"
+license = "Apache-2.0"
 
 [dependencies]
 rabia-core = { path = "../rabia-core" }

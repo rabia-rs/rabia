@@ -3,17 +3,17 @@
 //! This example demonstrates the performance characteristics of the Rabia
 //! consensus protocol under various conditions and workloads.
 
-use std::time::{Duration, Instant};
 use std::sync::Arc;
-use tokio::sync::{mpsc, Semaphore};
+use std::time::{Duration, Instant};
+use tokio::sync::Semaphore;
 use tokio::time::sleep;
-use tracing::{info, warn};
+use tracing::info;
 
 use rabia_core::{
-    Command, CommandBatch, NodeId,
-    memory_pool::MemoryPool,
-    batching::{BatchProcessor, BatchConfig},
-    serialization::{BinarySerializer, Serializer},
+    batching::{BatchConfig, BatchProcessor},
+    memory_pool::{MemoryPool, PoolConfig},
+    serialization::{BinarySerializer, MessageSerializer},
+    Command, CommandBatch,
 };
 use rabia_kvstore::{KVStore, KVStoreConfig};
 
@@ -62,7 +62,7 @@ impl BenchmarkResults {
     fn new(test_name: String, total_operations: usize, duration: Duration) -> Self {
         let operations_per_second = total_operations as f64 / duration.as_secs_f64();
         let avg_latency_us = duration.as_micros() as f64 / total_operations as f64;
-        
+
         Self {
             test_name,
             total_operations,
@@ -97,8 +97,8 @@ impl PerformanceBenchmark {
     fn new(config: BenchmarkConfig) -> Self {
         Self {
             config,
-            memory_pool: Arc::new(MemoryPool::new()),
-            serializer: Arc::new(BinarySerializer::new()),
+            memory_pool: Arc::new(MemoryPool::new(PoolConfig::default())),
+            serializer: Arc::new(BinarySerializer),
         }
     }
 
@@ -122,7 +122,11 @@ impl PerformanceBenchmark {
         }
 
         let duration = start.elapsed();
-        BenchmarkResults::new("KVStore Basic Operations".to_string(), self.config.operation_count, duration)
+        BenchmarkResults::new(
+            "KVStore Basic Operations".to_string(),
+            self.config.operation_count,
+            duration,
+        )
     }
 
     /// Benchmark batched KVStore operations
@@ -160,7 +164,11 @@ impl PerformanceBenchmark {
         }
 
         let duration = start.elapsed();
-        BenchmarkResults::new("KVStore Batched Operations".to_string(), self.config.operation_count, duration)
+        BenchmarkResults::new(
+            "KVStore Batched Operations".to_string(),
+            self.config.operation_count,
+            duration,
+        )
     }
 
     /// Benchmark concurrent KVStore operations
@@ -187,7 +195,7 @@ impl PerformanceBenchmark {
 
             let handle = tokio::spawn(async move {
                 let _permit = semaphore.acquire().await.unwrap();
-                
+
                 for i in 0..ops_per_worker {
                     let key = format!("concurrent_{}_{}", worker_id, i);
                     store.set(&key, &value).await.unwrap();
@@ -203,18 +211,23 @@ impl PerformanceBenchmark {
         }
 
         let duration = start.elapsed();
-        BenchmarkResults::new("KVStore Concurrent Operations".to_string(), self.config.operation_count, duration)
+        BenchmarkResults::new(
+            "KVStore Concurrent Operations".to_string(),
+            self.config.operation_count,
+            duration,
+        )
     }
 
     /// Benchmark command batch creation and processing
     async fn benchmark_command_batching(&self) -> BenchmarkResults {
-        let batch_config = BatchConfig {
+        let _batch_config = BatchConfig {
             max_batch_size: self.config.batch_size,
-            batch_timeout: Duration::from_millis(10),
-            enable_compression: false,
+            max_batch_delay: Duration::from_millis(10),
+            buffer_capacity: 1000,
+            adaptive: false,
         };
 
-        let batch_processor = BatchProcessor::new(batch_config);
+        let _batch_processor = BatchProcessor::new();
         let value = "x".repeat(self.config.value_size);
 
         let start = Instant::now();
@@ -230,7 +243,7 @@ impl PerformanceBenchmark {
         let mut processed = 0;
         for chunk in commands.chunks(self.config.batch_size) {
             let batch = CommandBatch::new(chunk.to_vec());
-            
+
             // Simulate batch processing
             let _checksum = batch.checksum();
             processed += chunk.len();
@@ -252,12 +265,12 @@ impl PerformanceBenchmark {
         // Allocate from pool
         for _ in 0..self.config.operation_count {
             if self.config.use_memory_pool {
-                let pooled = pool.get_bytes(value_size);
+                let pooled = pool.get_buffer(value_size);
                 allocations.push(pooled);
             } else {
                 // Standard allocation for comparison
-                let vec = vec![0u8; value_size];
-                let pooled = pool.get_bytes(value_size);
+                let _vec = vec![0u8; value_size];
+                let pooled = pool.get_buffer(value_size);
                 allocations.push(pooled);
             }
         }
@@ -266,7 +279,11 @@ impl PerformanceBenchmark {
         allocations.clear();
 
         let duration = start.elapsed();
-        BenchmarkResults::new("Memory Pool Operations".to_string(), self.config.operation_count, duration)
+        BenchmarkResults::new(
+            "Memory Pool Operations".to_string(),
+            self.config.operation_count,
+            duration,
+        )
     }
 
     /// Benchmark serialization performance
@@ -284,7 +301,8 @@ impl PerformanceBenchmark {
 
         if self.config.use_binary_serialization {
             // Binary serialization
-            for _ in 0..100 { // Repeat to get meaningful timing
+            for _ in 0..100 {
+                // Repeat to get meaningful timing
                 let _serialized = self.serializer.serialize(&batch).unwrap();
             }
         } else {
@@ -296,12 +314,18 @@ impl PerformanceBenchmark {
 
         let duration = start.elapsed();
         let effective_operations = self.config.operation_count * 100;
-        
+
         BenchmarkResults::new(
-            format!("Serialization ({})", 
-                   if self.config.use_binary_serialization { "Binary" } else { "JSON" }),
+            format!(
+                "Serialization ({})",
+                if self.config.use_binary_serialization {
+                    "Binary"
+                } else {
+                    "JSON"
+                }
+            ),
             effective_operations,
-            duration
+            duration,
         )
     }
 
@@ -358,7 +382,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("   - Concurrency: {}", config.concurrency);
     println!("   - Value Size: {} bytes", config.value_size);
     println!("   - Memory Pool: {}", config.use_memory_pool);
-    println!("   - Binary Serialization: {}", config.use_binary_serialization);
+    println!(
+        "   - Binary Serialization: {}",
+        config.use_binary_serialization
+    );
     println!();
 
     // Run benchmarks
@@ -381,11 +408,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let kvstore_batched = &results[1];
     let kvstore_concurrent = &results[2];
 
-    let batching_improvement = kvstore_batched.operations_per_second / kvstore_basic.operations_per_second;
-    let concurrency_improvement = kvstore_concurrent.operations_per_second / kvstore_basic.operations_per_second;
+    let batching_improvement =
+        kvstore_batched.operations_per_second / kvstore_basic.operations_per_second;
+    let concurrency_improvement =
+        kvstore_concurrent.operations_per_second / kvstore_basic.operations_per_second;
 
-    println!("✅ Batching provides {:.2}x throughput improvement", batching_improvement);
-    println!("✅ Concurrency provides {:.2}x throughput improvement", concurrency_improvement);
+    println!(
+        "✅ Batching provides {:.2}x throughput improvement",
+        batching_improvement
+    );
+    println!(
+        "✅ Concurrency provides {:.2}x throughput improvement",
+        concurrency_improvement
+    );
 
     // Memory usage estimation
     let estimated_memory_mb = (config.operation_count * config.value_size) as f64 / 1024.0 / 1024.0;
@@ -394,18 +429,23 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Performance targets
     println!("\n🎯 Performance Targets:");
     println!("----------------------");
-    
+
     let target_ops_per_sec = 100_000.0;
-    let best_throughput = results.iter()
+    let best_throughput = results
+        .iter()
         .map(|r| r.operations_per_second)
         .fold(0.0, f64::max);
 
     if best_throughput >= target_ops_per_sec {
-        println!("✅ Target throughput achieved: {:.0} ops/sec >= {:.0} ops/sec", 
-                 best_throughput, target_ops_per_sec);
+        println!(
+            "✅ Target throughput achieved: {:.0} ops/sec >= {:.0} ops/sec",
+            best_throughput, target_ops_per_sec
+        );
     } else {
-        println!("⚠️ Target throughput not reached: {:.0} ops/sec < {:.0} ops/sec", 
-                 best_throughput, target_ops_per_sec);
+        println!(
+            "⚠️ Target throughput not reached: {:.0} ops/sec < {:.0} ops/sec",
+            best_throughput, target_ops_per_sec
+        );
     }
 
     // Comparison with different configurations
@@ -419,11 +459,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
             batch_size,
             ..config
         };
-        
+
         let test_benchmark = PerformanceBenchmark::new(test_config);
         let result = test_benchmark.benchmark_kvstore_batched().await;
-        
-        println!("   Batch size {}: {:.0} ops/sec", batch_size, result.operations_per_second);
+
+        println!(
+            "   Batch size {}: {:.0} ops/sec",
+            batch_size, result.operations_per_second
+        );
         sleep(Duration::from_millis(50)).await;
     }
 

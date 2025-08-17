@@ -2,10 +2,10 @@
 //!
 //! Event-driven notification system for KVStore changes using a message bus pattern.
 
-use std::collections::HashMap;
-use std::sync::Arc;
 use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use std::sync::Arc;
 use tokio::sync::{broadcast, mpsc};
 use tracing::debug;
 use uuid::Uuid;
@@ -51,6 +51,12 @@ impl SubscriptionId {
     }
 }
 
+impl Default for SubscriptionId {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 /// Filter for notifications
 #[derive(Debug, Clone)]
 pub enum NotificationFilter {
@@ -76,12 +82,8 @@ impl NotificationFilter {
             NotificationFilter::Key(key) => notification.key == *key,
             NotificationFilter::KeyPrefix(prefix) => notification.key.starts_with(prefix),
             NotificationFilter::ChangeType(change_type) => notification.change_type == *change_type,
-            NotificationFilter::And(filters) => {
-                filters.iter().all(|f| f.matches(notification))
-            }
-            NotificationFilter::Or(filters) => {
-                filters.iter().any(|f| f.matches(notification))
-            }
+            NotificationFilter::And(filters) => filters.iter().all(|f| f.matches(notification)),
+            NotificationFilter::Or(filters) => filters.iter().any(|f| f.matches(notification)),
         }
     }
 }
@@ -105,10 +107,21 @@ pub struct NotificationStats {
 pub struct NotificationBus {
     /// Broadcast channel for all notifications
     broadcast_tx: broadcast::Sender<ChangeNotification>,
-    
+
     /// Individual subscriber channels
-    subscribers: Arc<RwLock<HashMap<SubscriptionId, (NotificationFilter, mpsc::UnboundedSender<ChangeNotification>)>>>,
-    
+    #[allow(clippy::type_complexity)]
+    subscribers: Arc<
+        RwLock<
+            HashMap<
+                SubscriptionId,
+                (
+                    NotificationFilter,
+                    mpsc::UnboundedSender<ChangeNotification>,
+                ),
+            >,
+        >,
+    >,
+
     /// Statistics
     stats: Arc<RwLock<NotificationStats>>,
 }
@@ -117,7 +130,7 @@ impl NotificationBus {
     /// Create a new notification bus
     pub fn new() -> Self {
         let (broadcast_tx, _) = broadcast::channel(1000);
-        
+
         Self {
             broadcast_tx,
             subscribers: Arc::new(RwLock::new(HashMap::new())),
@@ -129,7 +142,7 @@ impl NotificationBus {
     pub fn subscribe(&self, filter: NotificationFilter) -> Subscription {
         let id = SubscriptionId::new();
         let (tx, rx) = mpsc::unbounded_channel();
-        
+
         {
             let mut subscribers = self.subscribers.write();
             subscribers.insert(id, (filter.clone(), tx));
@@ -140,8 +153,11 @@ impl NotificationBus {
             stats.total_subscribers += 1;
         }
 
-        debug!("New subscription created: {:?} with filter: {:?}", id, filter);
-        
+        debug!(
+            "New subscription created: {:?} with filter: {:?}",
+            id, filter
+        );
+
         Subscription {
             id,
             filter,
@@ -188,7 +204,7 @@ impl NotificationBus {
         }
 
         // Send to broadcast channel (for global listeners)
-        if let Err(_) = self.broadcast_tx.send(notification.clone()) {
+        if self.broadcast_tx.send(notification.clone()).is_err() {
             // No broadcast receivers, that's fine
         }
 
@@ -197,21 +213,25 @@ impl NotificationBus {
         let mut dropped_count = 0;
 
         for (filter, sender) in subscribers.values() {
-            if filter.matches(&notification) {
-                if let Err(_) = sender.send(notification.clone()) {
-                    // Subscriber channel is closed, will be cleaned up later
-                    dropped_count += 1;
-                }
+            if filter.matches(&notification) && sender.send(notification.clone()).is_err() {
+                // Subscriber channel is closed, will be cleaned up later
+                dropped_count += 1;
             }
         }
 
         if dropped_count > 0 {
             let mut stats = self.stats.write();
             stats.dropped_notifications += dropped_count;
-            debug!("Dropped {} notifications due to closed channels", dropped_count);
+            debug!(
+                "Dropped {} notifications due to closed channels",
+                dropped_count
+            );
         }
 
-        debug!("Published notification: key={}, type={:?}", notification.key, notification.change_type);
+        debug!(
+            "Published notification: key={}, type={:?}",
+            notification.key, notification.change_type
+        );
     }
 
     /// Get a broadcast receiver for all notifications
@@ -223,7 +243,7 @@ impl NotificationBus {
     pub fn get_stats(&self) -> NotificationStats {
         let stats = self.stats.read();
         let subscribers = self.subscribers.read();
-        
+
         NotificationStats {
             total_notifications_sent: stats.total_notifications_sent,
             total_subscribers: subscribers.len(),
@@ -235,9 +255,9 @@ impl NotificationBus {
     pub fn cleanup_closed_subscribers(&self) {
         let mut subscribers = self.subscribers.write();
         let initial_count = subscribers.len();
-        
+
         subscribers.retain(|_, (_, sender)| !sender.is_closed());
-        
+
         let removed = initial_count - subscribers.len();
         if removed > 0 {
             debug!("Cleaned up {} closed subscriber channels", removed);
@@ -265,25 +285,25 @@ pub struct NotificationListener {
 impl NotificationListener {
     /// Create a new notification listener
     pub fn new(subscription: Subscription, name: String) -> Self {
-        Self {
-            subscription,
-            name,
-        }
+        Self { subscription, name }
     }
 
     /// Start listening for notifications and process them with the given handler
-    pub async fn listen<F, Fut>(&mut self, mut handler: F) 
+    pub async fn listen<F, Fut>(&mut self, mut handler: F)
     where
         F: FnMut(ChangeNotification) -> Fut,
         Fut: std::future::Future<Output = ()>,
     {
         debug!("Starting notification listener: {}", self.name);
-        
+
         while let Some(notification) = self.subscription.receiver.recv().await {
-            debug!("Listener {} received notification: {:?}", self.name, notification);
+            debug!(
+                "Listener {} received notification: {:?}",
+                self.name, notification
+            );
             handler(notification).await;
         }
-        
+
         debug!("Notification listener {} stopped", self.name);
     }
 

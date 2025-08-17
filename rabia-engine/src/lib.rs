@@ -1,7 +1,7 @@
+pub mod config;
 pub mod engine;
 pub mod state;
-pub mod config;
 
+pub use config::*;
 pub use engine::*;
 pub use state::*;
-pub use config::*;

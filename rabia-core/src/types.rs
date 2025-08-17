@@ -194,7 +194,7 @@ pub enum StateValue {
     /// Vote to reject the proposed value
     V0,
     /// Vote to accept the proposed value
-    V1, 
+    V1,
     /// Undecided vote, used in randomization phase
     VQuestion,
 }

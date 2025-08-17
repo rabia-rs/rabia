@@ -3,12 +3,14 @@ name = "rabia-testing"
 version = "0.1.0"
 edition = "2021"
 description = "Testing utilities and simulation framework for Rabia consensus protocol"
+publish = false
 
 [dependencies]
 rabia-core = { path = "../rabia-core" }
 rabia-engine = { path = "../rabia-engine" }
 rabia-network = { path = "../rabia-network" }
 rabia-persistence = { path = "../rabia-persistence" }
+rabia-kvstore = { path = "../rabia-kvstore" }
 tokio = { workspace = true }
 serde = { workspace = true }
 uuid = { workspace = true }

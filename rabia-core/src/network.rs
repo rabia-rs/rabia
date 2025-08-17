@@ -1,7 +1,7 @@
+use crate::messages::ProtocolMessage;
+use crate::{NodeId, Result};
 use async_trait::async_trait;
 use std::collections::HashSet;
-use crate::{Result, NodeId};
-use crate::messages::ProtocolMessage;
 
 #[derive(Debug, Clone)]
 pub struct ClusterConfig {
@@ -53,13 +53,13 @@ pub trait NetworkTransport: Send + Sync {
 #[async_trait]
 pub trait NetworkEventHandler: Send + Sync {
     async fn on_node_connected(&self, node_id: NodeId);
-    
+
     async fn on_node_disconnected(&self, node_id: NodeId);
-    
+
     async fn on_network_partition(&self, active_nodes: HashSet<NodeId>);
-    
+
     async fn on_quorum_lost(&self);
-    
+
     async fn on_quorum_restored(&self, active_nodes: HashSet<NodeId>);
 }
 
@@ -73,7 +73,7 @@ impl NetworkMonitor {
     pub fn new(config: ClusterConfig) -> Self {
         let connected_nodes = config.all_nodes.clone();
         let has_quorum = config.has_quorum(&connected_nodes);
-        
+
         Self {
             config,
             connected_nodes,
@@ -83,33 +83,35 @@ impl NetworkMonitor {
 
     pub fn update_connected_nodes(&mut self, nodes: HashSet<NodeId>) -> Vec<NetworkEvent> {
         let mut events = Vec::new();
-        
-        let newly_connected: HashSet<_> = nodes.difference(&self.connected_nodes).copied().collect();
-        let newly_disconnected: HashSet<_> = self.connected_nodes.difference(&nodes).copied().collect();
-        
+
+        let newly_connected: HashSet<_> =
+            nodes.difference(&self.connected_nodes).copied().collect();
+        let newly_disconnected: HashSet<_> =
+            self.connected_nodes.difference(&nodes).copied().collect();
+
         for &node in &newly_connected {
             events.push(NetworkEvent::NodeConnected(node));
         }
-        
+
         for &node in &newly_disconnected {
             events.push(NetworkEvent::NodeDisconnected(node));
         }
-        
+
         let new_has_quorum = self.config.has_quorum(&nodes);
-        
+
         if self.has_quorum && !new_has_quorum {
             events.push(NetworkEvent::QuorumLost);
         } else if !self.has_quorum && new_has_quorum {
             events.push(NetworkEvent::QuorumRestored(nodes.clone()));
         }
-        
+
         if !newly_connected.is_empty() || !newly_disconnected.is_empty() {
             events.push(NetworkEvent::NetworkPartition(nodes.clone()));
         }
-        
+
         self.connected_nodes = nodes;
         self.has_quorum = new_has_quorum;
-        
+
         events
     }
 

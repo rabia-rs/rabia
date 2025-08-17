@@ -1,11 +1,11 @@
 use async_trait::async_trait;
 use parking_lot::RwLock;
+use rabia_core::{
+    persistence::{PersistedState, PersistenceLayer, WALOperation, WriteAheadLogEntry},
+    RabiaError, Result,
+};
 use std::collections::HashMap;
 use std::sync::Arc;
-use rabia_core::{
-    Result, RabiaError,
-    persistence::{PersistenceLayer, PersistedState, WriteAheadLogEntry, WALOperation},
-};
 
 #[derive(Debug, Clone)]
 pub struct InMemoryPersistence {

@@ -1,13 +1,11 @@
-use std::collections::HashSet;
-use tokio::sync::mpsc;
 use rabia_core::{
-    NodeId, CommandBatch, Command,
-    network::ClusterConfig,
-    state_machine::InMemoryStateMachine,
+    network::ClusterConfig, state_machine::InMemoryStateMachine, Command, CommandBatch, NodeId,
 };
-use rabia_engine::{RabiaEngine, RabiaConfig};
+use rabia_engine::{RabiaConfig, RabiaEngine};
 use rabia_network::InMemoryNetwork;
 use rabia_persistence::InMemoryPersistence;
+use std::collections::HashSet;
+use tokio::sync::mpsc;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -26,10 +24,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let config = RabiaConfig::default();
 
     // Create command channel
-    let (cmd_tx, cmd_rx) = mpsc::unbounded_channel();
+    let (_cmd_tx, cmd_rx) = mpsc::unbounded_channel();
 
     // Create and start the consensus engine
-    let engine = RabiaEngine::new(
+    let _engine = RabiaEngine::new(
         node_id,
         config,
         cluster_config,
@@ -40,7 +38,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     );
 
     println!("🚀 Starting Rabia consensus engine for node {}", node_id);
-    
+
     // In a real application, you would run the engine in a separate task
     // and use the command channel to interact with it
     println!("✅ Rabia consensus engine created successfully!");
@@ -59,8 +57,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         Command::new("GET key1"),
     ];
     let batch = CommandBatch::new(commands);
-    
-    println!("📝 Sample command batch created with {} commands", batch.commands.len());
+
+    println!(
+        "📝 Sample command batch created with {} commands",
+        batch.commands.len()
+    );
     println!("🔐 Batch checksum: {}", batch.checksum());
 
     Ok(())

@@ -1,14 +1,14 @@
+use bytes::Bytes;
 use dashmap::DashMap;
 use parking_lot::RwLock;
-use std::collections::HashMap;
-use std::sync::Arc;
-use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
-use tokio::sync::{mpsc, oneshot};
-use bytes::Bytes;
 use rabia_core::{
-    NodeId, PhaseId, BatchId, CommandBatch, Result, RabiaError,
-    messages::{PhaseData, PendingBatch, SyncResponseMessage},
+    messages::{PendingBatch, PhaseData, SyncResponseMessage},
+    BatchId, CommandBatch, NodeId, PhaseId, RabiaError, Result,
 };
+use std::collections::HashMap;
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use std::sync::Arc;
+use tokio::sync::{mpsc, oneshot};
 
 #[derive(Debug)]
 pub struct EngineState {
@@ -16,14 +16,14 @@ pub struct EngineState {
     pub last_committed_phase: Arc<AtomicU64>,
     pub is_active: Arc<AtomicBool>,
     pub has_quorum: Arc<AtomicBool>,
-    
+
     pub pending_batches: Arc<DashMap<BatchId, PendingBatch>>,
     pub phases: Arc<DashMap<PhaseId, PhaseData>>,
     pub sync_responses: Arc<DashMap<NodeId, SyncResponseMessage>>,
-    
+
     pub active_nodes: Arc<RwLock<std::collections::HashSet<NodeId>>>,
     pub quorum_size: usize,
-    
+
     pub state_version: Arc<AtomicU64>,
     pub last_cleanup: Arc<AtomicU64>,
 }
@@ -35,14 +35,14 @@ impl EngineState {
             last_committed_phase: Arc::new(AtomicU64::new(0)),
             is_active: Arc::new(AtomicBool::new(true)),
             has_quorum: Arc::new(AtomicBool::new(true)),
-            
+
             pending_batches: Arc::new(DashMap::new()),
             phases: Arc::new(DashMap::new()),
             sync_responses: Arc::new(DashMap::new()),
-            
+
             active_nodes: Arc::new(RwLock::new(std::collections::HashSet::new())),
             quorum_size,
-            
+
             state_version: Arc::new(AtomicU64::new(1)),
             last_cleanup: Arc::new(AtomicU64::new(0)),
         }
@@ -65,7 +65,7 @@ impl EngineState {
     pub fn commit_phase(&self, phase_id: PhaseId) -> Result<bool> {
         let phase_value = phase_id.value();
         let current_phase_value = self.current_phase.load(Ordering::Acquire);
-        
+
         // Validate phase ordering - can only commit phases <= current phase
         if phase_value > current_phase_value {
             return Err(RabiaError::InvalidStateTransition {
@@ -73,9 +73,9 @@ impl EngineState {
                 to: format!("commit_phase={}", phase_value),
             });
         }
-        
+
         let mut current = self.last_committed_phase.load(Ordering::Acquire);
-        
+
         // Only allow monotonic increases in committed phase
         while current < phase_value {
             match self.last_committed_phase.compare_exchange_weak(
@@ -97,7 +97,7 @@ impl EngineState {
                 }
             }
         }
-        
+
         // Phase was already committed or higher phase was committed
         Ok(false)
     }
@@ -128,7 +128,7 @@ impl EngineState {
 
     pub fn update_active_nodes(&self, nodes: std::collections::HashSet<NodeId>) {
         let has_quorum = nodes.len() >= self.quorum_size;
-        
+
         {
             let mut active_nodes = self.active_nodes.write();
             if *active_nodes != nodes {
@@ -136,7 +136,7 @@ impl EngineState {
                 self.increment_version();
             }
         }
-        
+
         self.set_quorum(has_quorum);
         self.set_active(has_quorum);
     }
@@ -158,7 +158,9 @@ impl EngineState {
     }
 
     pub fn get_pending_batch(&self, batch_id: &BatchId) -> Option<PendingBatch> {
-        self.pending_batches.get(batch_id).map(|entry| entry.value().clone())
+        self.pending_batches
+            .get(batch_id)
+            .map(|entry| entry.value().clone())
     }
 
     pub fn get_or_create_phase(&self, phase_id: PhaseId) -> PhaseData {
@@ -176,7 +178,7 @@ impl EngineState {
         F: FnOnce(&mut PhaseData),
     {
         if let Some(mut entry) = self.phases.get_mut(&phase_id) {
-            update_fn(&mut *entry);
+            update_fn(&mut entry);
             self.increment_version();
         }
         Ok(())

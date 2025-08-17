@@ -1,6 +1,6 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
-use rabia_core::{Command, CommandBatch, messages::*, PhaseId, NodeId, StateValue, BatchId};
-use rabia_core::serialization::{Serializer, MessageSerializer};
+use rabia_core::serialization::{MessageSerializer, Serializer};
+use rabia_core::{messages::*, BatchId, Command, CommandBatch, NodeId, PhaseId, StateValue};
 
 fn create_test_message() -> ProtocolMessage {
     ProtocolMessage::new(
@@ -59,13 +59,17 @@ fn benchmark_serialization_comparison(c: &mut Criterion) {
 
     c.bench_function("json_deserialize_small", |b| {
         b.iter(|| {
-            let _: ProtocolMessage = json_serializer.deserialize(black_box(&json_serialized)).unwrap();
+            let _: ProtocolMessage = json_serializer
+                .deserialize(black_box(&json_serialized))
+                .unwrap();
         })
     });
 
     c.bench_function("binary_deserialize_small", |b| {
         b.iter(|| {
-            let _: ProtocolMessage = binary_serializer.deserialize(black_box(&binary_serialized)).unwrap();
+            let _: ProtocolMessage = binary_serializer
+                .deserialize(black_box(&binary_serialized))
+                .unwrap();
         })
     });
 
@@ -84,13 +88,17 @@ fn benchmark_serialization_comparison(c: &mut Criterion) {
 
     c.bench_function("json_deserialize_large", |b| {
         b.iter(|| {
-            let _: ProtocolMessage = json_serializer.deserialize(black_box(&json_large_serialized)).unwrap();
+            let _: ProtocolMessage = json_serializer
+                .deserialize(black_box(&json_large_serialized))
+                .unwrap();
         })
     });
 
     c.bench_function("binary_deserialize_large", |b| {
         b.iter(|| {
-            let _: ProtocolMessage = binary_serializer.deserialize(black_box(&binary_large_serialized)).unwrap();
+            let _: ProtocolMessage = binary_serializer
+                .deserialize(black_box(&binary_large_serialized))
+                .unwrap();
         })
     });
 }
@@ -102,8 +110,14 @@ fn benchmark_message_sizes(c: &mut Criterion) {
     c.bench_function("size_comparison_small", |b| {
         b.iter(|| {
             let message = create_test_message();
-            let json_size = json_serializer.serialize(black_box(&message)).unwrap().len();
-            let binary_size = binary_serializer.serialize(black_box(&message)).unwrap().len();
+            let json_size = json_serializer
+                .serialize(black_box(&message))
+                .unwrap()
+                .len();
+            let binary_size = binary_serializer
+                .serialize(black_box(&message))
+                .unwrap()
+                .len();
             (json_size, binary_size)
         })
     });
@@ -111,8 +125,14 @@ fn benchmark_message_sizes(c: &mut Criterion) {
     c.bench_function("size_comparison_large", |b| {
         b.iter(|| {
             let message = create_large_message();
-            let json_size = json_serializer.serialize(black_box(&message)).unwrap().len();
-            let binary_size = binary_serializer.serialize(black_box(&message)).unwrap().len();
+            let json_size = json_serializer
+                .serialize(black_box(&message))
+                .unwrap()
+                .len();
+            let binary_size = binary_serializer
+                .serialize(black_box(&message))
+                .unwrap()
+                .len();
             (json_size, binary_size)
         })
     });

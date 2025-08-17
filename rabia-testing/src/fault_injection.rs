@@ -3,25 +3,47 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::sync::mpsc;
 use tokio::time::sleep;
-use tracing::{info, warn, error};
+use tracing::{error, info, warn};
 
-use rabia_core::{NodeId, CommandBatch, Command, network::ClusterConfig, state_machine::InMemoryStateMachine};
-use rabia_engine::{RabiaEngine, RabiaConfig, EngineCommand, EngineCommandSender};
+use rabia_core::{
+    network::ClusterConfig, state_machine::InMemoryStateMachine, Command, CommandBatch, NodeId,
+};
+use rabia_engine::{EngineCommand, EngineCommandSender, RabiaConfig, RabiaEngine};
 use rabia_persistence::InMemoryPersistence;
 
-use crate::network_sim::{NetworkSimulator, SimulatedNetwork, NetworkConditions};
+use crate::network_sim::{NetworkConditions, NetworkSimulator, SimulatedNetwork};
 
 #[derive(Debug, Clone)]
 pub enum FaultType {
-    NodeCrash { node_id: NodeId, duration: Duration },
-    NetworkPartition { nodes: HashSet<NodeId>, duration: Duration },
-    PacketLoss { rate: f64, duration: Duration },
-    HighLatency { min: Duration, max: Duration, duration: Duration },
-    SlowNode { node_id: NodeId, delay_factor: f64, duration: Duration },
-    MessageReordering { probability: f64, max_delay: Duration },
+    NodeCrash {
+        node_id: NodeId,
+        duration: Duration,
+    },
+    NetworkPartition {
+        nodes: HashSet<NodeId>,
+        duration: Duration,
+    },
+    PacketLoss {
+        rate: f64,
+        duration: Duration,
+    },
+    HighLatency {
+        min: Duration,
+        max: Duration,
+        duration: Duration,
+    },
+    SlowNode {
+        node_id: NodeId,
+        delay_factor: f64,
+        duration: Duration,
+    },
+    MessageReordering {
+        probability: f64,
+        max_delay: Duration,
+    },
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct TestScenario {
     pub name: String,
     pub description: String,
@@ -32,7 +54,7 @@ pub struct TestScenario {
     pub timeout: Duration,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum ExpectedOutcome {
     AllCommitted,
     PartialCommitment { min_committed: usize },
@@ -43,11 +65,14 @@ pub enum ExpectedOutcome {
 pub struct ConsensusTestHarness {
     simulator: Arc<NetworkSimulator>,
     nodes: HashMap<NodeId, Arc<ConsensusNode>>,
+    #[allow(dead_code)]
     test_duration: Duration,
+    #[allow(dead_code)]
     start_time: Instant,
 }
 
 struct ConsensusNode {
+    #[allow(dead_code)]
     node_id: NodeId,
     engine_tx: EngineCommandSender,
     #[allow(dead_code)]
@@ -126,7 +151,7 @@ impl ConsensusTestHarness {
             if let Some(node) = self.nodes.get(node_id) {
                 let batch = CommandBatch::new(vec![command.clone()]);
                 let (response_tx, _response_rx) = tokio::sync::oneshot::channel();
-                
+
                 let cmd = EngineCommand::ProcessBatch(rabia_engine::CommandRequest {
                     batch,
                     response_tx,
@@ -153,8 +178,13 @@ impl ConsensusTestHarness {
 
         // Analyze outcome
         let actual_outcome = self.analyze_outcome().await;
-        let success = self.check_expected_outcome(&scenario.expected_outcome, &actual_outcome).await;
-        let details = format!("Expected: {:?}, Actual: {:?}", scenario.expected_outcome, actual_outcome);
+        let success = self
+            .check_expected_outcome(&scenario.expected_outcome, &actual_outcome)
+            .await;
+        let details = format!(
+            "Expected: {:?}, Actual: {:?}",
+            scenario.expected_outcome, actual_outcome
+        );
 
         TestResult {
             scenario: scenario.name,
@@ -169,10 +199,13 @@ impl ConsensusTestHarness {
     async fn inject_fault(&self, fault: FaultType) {
         match fault {
             FaultType::NodeCrash { node_id, duration } => {
-                info!("Injecting node crash for {} (duration: {:?})", node_id, duration);
+                info!(
+                    "Injecting node crash for {} (duration: {:?})",
+                    node_id, duration
+                );
                 self.simulator.remove_node(node_id).await;
-                
-                let sim = self.simulator.clone();
+
+                let _sim = self.simulator.clone();
                 tokio::spawn(async move {
                     sleep(duration).await;
                     // Note: In a real implementation, we'd need to restart the node
@@ -181,32 +214,49 @@ impl ConsensusTestHarness {
             }
 
             FaultType::NetworkPartition { nodes, duration } => {
-                info!("Injecting network partition for {:?} (duration: {:?})", nodes, duration);
+                info!(
+                    "Injecting network partition for {:?} (duration: {:?})",
+                    nodes, duration
+                );
                 self.simulator.create_partition(nodes, duration).await;
             }
 
             FaultType::PacketLoss { rate, duration } => {
-                info!("Injecting packet loss rate {} (duration: {:?})", rate, duration);
-                let mut conditions = NetworkConditions::default();
-                conditions.packet_loss_rate = rate;
+                info!(
+                    "Injecting packet loss rate {} (duration: {:?})",
+                    rate, duration
+                );
+                let conditions = NetworkConditions {
+                    packet_loss_rate: rate,
+                    ..Default::default()
+                };
                 self.simulator.update_conditions(conditions.clone()).await;
-                
+
                 let sim = self.simulator.clone();
                 tokio::spawn(async move {
                     sleep(duration).await;
-                    let mut restore_conditions = NetworkConditions::default();
-                    restore_conditions.packet_loss_rate = 0.0;
+                    let restore_conditions = NetworkConditions {
+                        packet_loss_rate: 0.0,
+                        ..Default::default()
+                    };
                     sim.update_conditions(restore_conditions).await;
                 });
             }
 
             FaultType::HighLatency { min, max, duration } => {
-                info!("Injecting high latency {}-{:?} (duration: {:?})", min.as_millis(), max.as_millis(), duration);
-                let mut conditions = NetworkConditions::default();
-                conditions.latency_min = min;
-                conditions.latency_max = max;
+                info!(
+                    "Injecting high latency {}-{:?} (duration: {:?})",
+                    min.as_millis(),
+                    max.as_millis(),
+                    duration
+                );
+                let conditions = NetworkConditions {
+                    latency_min: min,
+                    latency_max: max,
+                    ..Default::default()
+                };
                 self.simulator.update_conditions(conditions.clone()).await;
-                
+
                 let sim = self.simulator.clone();
                 tokio::spawn(async move {
                     sleep(duration).await;
@@ -214,13 +264,23 @@ impl ConsensusTestHarness {
                 });
             }
 
-            FaultType::SlowNode { node_id, delay_factor: _, duration } => {
+            FaultType::SlowNode {
+                node_id,
+                delay_factor: _,
+                duration,
+            } => {
                 // This would require modifying the node's processing speed
-                info!("Injecting slow node for {} (duration: {:?})", node_id, duration);
+                info!(
+                    "Injecting slow node for {} (duration: {:?})",
+                    node_id, duration
+                );
                 // Implementation would involve throttling the node's message processing
             }
 
-            FaultType::MessageReordering { probability: _, max_delay: _ } => {
+            FaultType::MessageReordering {
+                probability: _,
+                max_delay: _,
+            } => {
                 // This would require modifying the network simulator to reorder messages
                 info!("Injecting message reordering");
                 // Implementation would involve delaying random messages
@@ -231,30 +291,39 @@ impl ConsensusTestHarness {
     async fn analyze_outcome(&self) -> ActualOutcome {
         // Get statistics from all nodes
         let mut node_stats = HashMap::new();
-        
+
         for (&node_id, node) in &self.nodes {
             let (stats_tx, stats_rx) = tokio::sync::oneshot::channel();
-            if node.engine_tx.send(EngineCommand::GetStatistics(stats_tx)).is_ok() {
-                if let Ok(stats) = tokio::time::timeout(Duration::from_millis(100), stats_rx).await {
-                    if let Ok(stats) = stats {
-                        node_stats.insert(node_id, stats);
-                    }
+            if node
+                .engine_tx
+                .send(EngineCommand::GetStatistics(stats_tx))
+                .is_ok()
+            {
+                if let Ok(Ok(stats)) = tokio::time::timeout(Duration::from_millis(100), stats_rx).await
+                {
+                    node_stats.insert(node_id, stats);
                 }
             }
         }
 
         ActualOutcome {
-            committed_phases: node_stats.values()
+            committed_phases: node_stats
+                .values()
                 .map(|s| s.last_committed_phase.value())
                 .collect(),
-            current_phases: node_stats.values()
+            current_phases: node_stats
+                .values()
                 .map(|s| s.current_phase.value())
                 .collect(),
             nodes_with_progress: node_stats.len(),
         }
     }
 
-    async fn check_expected_outcome(&self, expected: &ExpectedOutcome, actual: &ActualOutcome) -> bool {
+    async fn check_expected_outcome(
+        &self,
+        expected: &ExpectedOutcome,
+        actual: &ActualOutcome,
+    ) -> bool {
         match expected {
             ExpectedOutcome::AllCommitted => {
                 // All nodes should have committed the same number of phases
@@ -265,13 +334,12 @@ impl ConsensusTestHarness {
                 }
             }
 
-            ExpectedOutcome::PartialCommitment { min_committed } => {
-                actual.committed_phases.iter().any(|&phase| phase >= *min_committed as u64)
-            }
+            ExpectedOutcome::PartialCommitment { min_committed } => actual
+                .committed_phases
+                .iter()
+                .any(|&phase| phase >= *min_committed as u64),
 
-            ExpectedOutcome::NoProgress => {
-                actual.committed_phases.iter().all(|&phase| phase == 0)
-            }
+            ExpectedOutcome::NoProgress => actual.committed_phases.iter().all(|&phase| phase == 0),
 
             ExpectedOutcome::EventualConsistency => {
                 // Check if nodes eventually converge (allowing for some lag)
@@ -284,7 +352,7 @@ impl ConsensusTestHarness {
 
     pub async fn shutdown(&self) {
         self.simulator.shutdown().await;
-        
+
         // Send shutdown to all nodes
         for node in self.nodes.values() {
             let _ = node.engine_tx.send(EngineCommand::Shutdown);
@@ -324,7 +392,6 @@ pub fn create_test_scenarios() -> Vec<TestScenario> {
             expected_outcome: ExpectedOutcome::AllCommitted,
             timeout: Duration::from_secs(5),
         },
-
         TestScenario {
             name: "Single Node Failure".to_string(),
             description: "One node crashes and recovers".to_string(),
@@ -333,16 +400,16 @@ pub fn create_test_scenarios() -> Vec<TestScenario> {
                 Command::new("SET key1 value1"),
                 Command::new("SET key2 value2"),
             ],
-            faults: vec![
-                (Duration::from_millis(500), FaultType::NodeCrash {
+            faults: vec![(
+                Duration::from_millis(500),
+                FaultType::NodeCrash {
                     node_id: NodeId::new(), // Will be replaced with actual node ID
                     duration: Duration::from_secs(2),
-                }),
-            ],
+                },
+            )],
             expected_outcome: ExpectedOutcome::EventualConsistency,
             timeout: Duration::from_secs(10),
         },
-
         TestScenario {
             name: "Network Partition".to_string(),
             description: "Network splits into two partitions".to_string(),
@@ -352,16 +419,16 @@ pub fn create_test_scenarios() -> Vec<TestScenario> {
                 Command::new("SET key2 value2"),
                 Command::new("SET key3 value3"),
             ],
-            faults: vec![
-                (Duration::from_millis(1000), FaultType::NetworkPartition {
+            faults: vec![(
+                Duration::from_millis(1000),
+                FaultType::NetworkPartition {
                     nodes: HashSet::new(), // Will be populated with actual node IDs
                     duration: Duration::from_secs(3),
-                }),
-            ],
+                },
+            )],
             expected_outcome: ExpectedOutcome::PartialCommitment { min_committed: 1 },
             timeout: Duration::from_secs(15),
         },
-
         TestScenario {
             name: "High Packet Loss".to_string(),
             description: "Network with high packet loss rate".to_string(),
@@ -370,16 +437,16 @@ pub fn create_test_scenarios() -> Vec<TestScenario> {
                 Command::new("SET key1 value1"),
                 Command::new("SET key2 value2"),
             ],
-            faults: vec![
-                (Duration::from_millis(200), FaultType::PacketLoss {
+            faults: vec![(
+                Duration::from_millis(200),
+                FaultType::PacketLoss {
                     rate: 0.3, // 30% packet loss
                     duration: Duration::from_secs(5),
-                }),
-            ],
+                },
+            )],
             expected_outcome: ExpectedOutcome::EventualConsistency,
             timeout: Duration::from_secs(12),
         },
-
         TestScenario {
             name: "High Network Latency".to_string(),
             description: "Network with high latency".to_string(),
@@ -388,17 +455,17 @@ pub fn create_test_scenarios() -> Vec<TestScenario> {
                 Command::new("SET key1 value1"),
                 Command::new("SET key2 value2"),
             ],
-            faults: vec![
-                (Duration::from_millis(100), FaultType::HighLatency {
+            faults: vec![(
+                Duration::from_millis(100),
+                FaultType::HighLatency {
                     min: Duration::from_millis(100),
                     max: Duration::from_millis(500),
                     duration: Duration::from_secs(4),
-                }),
-            ],
+                },
+            )],
             expected_outcome: ExpectedOutcome::AllCommitted,
             timeout: Duration::from_secs(10),
         },
-
         TestScenario {
             name: "Cascading Failures".to_string(),
             description: "Multiple nodes fail in sequence".to_string(),
@@ -409,14 +476,20 @@ pub fn create_test_scenarios() -> Vec<TestScenario> {
                 Command::new("SET key3 value3"),
             ],
             faults: vec![
-                (Duration::from_millis(500), FaultType::NodeCrash {
-                    node_id: NodeId::new(),
-                    duration: Duration::from_secs(3),
-                }),
-                (Duration::from_millis(1500), FaultType::NodeCrash {
-                    node_id: NodeId::new(),
-                    duration: Duration::from_secs(2),
-                }),
+                (
+                    Duration::from_millis(500),
+                    FaultType::NodeCrash {
+                        node_id: NodeId::new(),
+                        duration: Duration::from_secs(3),
+                    },
+                ),
+                (
+                    Duration::from_millis(1500),
+                    FaultType::NodeCrash {
+                        node_id: NodeId::new(),
+                        duration: Duration::from_secs(2),
+                    },
+                ),
             ],
             expected_outcome: ExpectedOutcome::PartialCommitment { min_committed: 1 },
             timeout: Duration::from_secs(15),
@@ -460,12 +533,13 @@ mod tests {
             description: "Test with packet loss".to_string(),
             node_count: 3,
             initial_commands: vec![Command::new("SET test value")],
-            faults: vec![
-                (Duration::from_millis(100), FaultType::PacketLoss {
+            faults: vec![(
+                Duration::from_millis(100),
+                FaultType::PacketLoss {
                     rate: 0.2,
                     duration: Duration::from_secs(2),
-                }),
-            ],
+                },
+            )],
             expected_outcome: ExpectedOutcome::EventualConsistency,
             timeout: Duration::from_secs(8),
         };

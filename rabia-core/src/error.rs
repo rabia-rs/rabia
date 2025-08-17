@@ -2,8 +2,8 @@
 //!
 //! Comprehensive error handling for the Rabia consensus protocol.
 
+use crate::{BatchId, NodeId, PhaseId};
 use thiserror::Error;
-use crate::{NodeId, PhaseId, BatchId};
 
 /// Error types that can occur during Rabia consensus operations.
 ///
@@ -127,7 +127,9 @@ impl RabiaError {
     /// let error = RabiaError::network("Connection timeout");
     /// ```
     pub fn network(message: impl Into<String>) -> Self {
-        Self::Network { message: message.into() }
+        Self::Network {
+            message: message.into(),
+        }
     }
 
     /// Creates a new persistence error with the given message.
@@ -140,7 +142,9 @@ impl RabiaError {
     /// let error = RabiaError::persistence("Disk full");
     /// ```
     pub fn persistence(message: impl Into<String>) -> Self {
-        Self::Persistence { message: message.into() }
+        Self::Persistence {
+            message: message.into(),
+        }
     }
 
     /// Creates a new state machine error with the given message.
@@ -153,7 +157,9 @@ impl RabiaError {
     /// let error = RabiaError::state_machine("Invalid command");
     /// ```
     pub fn state_machine(message: impl Into<String>) -> Self {
-        Self::StateMachine { message: message.into() }
+        Self::StateMachine {
+            message: message.into(),
+        }
     }
 
     /// Creates a new consensus error with the given message.
@@ -166,7 +172,9 @@ impl RabiaError {
     /// let error = RabiaError::consensus("Phase mismatch");
     /// ```
     pub fn consensus(message: impl Into<String>) -> Self {
-        Self::Consensus { message: message.into() }
+        Self::Consensus {
+            message: message.into(),
+        }
     }
 
     /// Creates a new internal error with the given message.
@@ -179,7 +187,9 @@ impl RabiaError {
     /// let error = RabiaError::internal("Unexpected condition");
     /// ```
     pub fn internal(message: impl Into<String>) -> Self {
-        Self::Internal { message: message.into() }
+        Self::Internal {
+            message: message.into(),
+        }
     }
 
     /// Creates a new serialization error with the given message.
@@ -192,7 +202,9 @@ impl RabiaError {
     /// let error = RabiaError::serialization("Invalid JSON");
     /// ```
     pub fn serialization(message: impl Into<String>) -> Self {
-        Self::Internal { message: format!("Serialization error: {}", message.into()) }
+        Self::Internal {
+            message: format!("Serialization error: {}", message.into()),
+        }
     }
 
     /// Determines if this error condition is potentially recoverable.
@@ -222,9 +234,7 @@ impl RabiaError {
     pub fn is_retryable(&self) -> bool {
         matches!(
             self,
-            Self::Network { .. }
-                | Self::Timeout { .. }
-                | Self::QuorumNotAvailable { .. }
+            Self::Network { .. } | Self::Timeout { .. } | Self::QuorumNotAvailable { .. }
         )
     }
 }

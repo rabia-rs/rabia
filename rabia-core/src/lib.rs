@@ -33,16 +33,16 @@
 //! let phase_id = PhaseId::new(1);
 //! ```
 
+pub mod batching;
 pub mod error;
+pub mod memory_pool;
 pub mod messages;
-pub mod state_machine;
 pub mod network;
 pub mod persistence;
+pub mod serialization;
+pub mod state_machine;
 pub mod types;
 pub mod validation;
-pub mod serialization;
-pub mod memory_pool;
-pub mod batching;
 
 // Re-export commonly used types for convenience
 pub use error::*;
@@ -52,23 +52,23 @@ pub use validation::*;
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::messages::{ProposeMessage, ProtocolMessage};
     use crate::state_machine::{InMemoryStateMachine, StateMachine};
-    use crate::messages::{ProtocolMessage, ProposeMessage};
 
     #[tokio::test]
     async fn test_state_machine_basic_operations() {
         let mut sm = InMemoryStateMachine::new();
-        
+
         // Test SET command
         let set_cmd = Command::new("SET key1 value1");
         let result = sm.apply_command(&set_cmd).await.unwrap();
         assert_eq!(result, bytes::Bytes::from("OK"));
-        
+
         // Test GET command
         let get_cmd = Command::new("GET key1");
         let result = sm.apply_command(&get_cmd).await.unwrap();
         assert_eq!(result, bytes::Bytes::from("value1"));
-        
+
         // Test GET non-existent key
         let get_cmd = Command::new("GET nonexistent");
         let result = sm.apply_command(&get_cmd).await.unwrap();
@@ -81,11 +81,11 @@ mod tests {
             Command::new("SET key1 value1"),
             Command::new("SET key2 value2"),
         ];
-        
+
         let batch = CommandBatch::new(commands.clone());
         assert_eq!(batch.commands.len(), 2);
         assert_eq!(batch.commands, commands);
-        
+
         // Test checksum calculation
         let checksum = batch.checksum();
         assert!(checksum > 0);
@@ -95,7 +95,7 @@ mod tests {
     fn test_phase_id_operations() {
         let phase1 = PhaseId::new(1);
         let phase2 = phase1.next();
-        
+
         assert_eq!(phase1.value(), 1);
         assert_eq!(phase2.value(), 2);
         assert!(phase2 > phase1);
@@ -106,16 +106,16 @@ mod tests {
         let node_id = NodeId::new();
         let batch_id = BatchId::new();
         let phase_id = PhaseId::new(1);
-        
+
         let propose = ProposeMessage {
             phase_id,
             batch_id,
             value: StateValue::V1,
             batch: None,
         };
-        
+
         let message = ProtocolMessage::propose(node_id, propose);
-        
+
         // Basic message should validate successfully
         assert!(message.validate().is_ok());
     }
@@ -124,7 +124,7 @@ mod tests {
     fn test_error_types() {
         let error = RabiaError::network("test error");
         assert!(error.is_retryable());
-        
+
         let error = RabiaError::ChecksumMismatch {
             expected: 123,
             actual: 456,
