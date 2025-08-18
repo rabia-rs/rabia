@@ -718,7 +718,7 @@ dependencies = [
 
 [[package]]
 name = "rabia-core"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "async-trait",
  "bincode",
@@ -735,7 +735,7 @@ dependencies = [
 
 [[package]]
 name = "rabia-engine"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -771,7 +771,7 @@ dependencies = [
 
 [[package]]
 name = "rabia-kvstore"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "async-trait",
  "bytes",
@@ -791,7 +791,7 @@ dependencies = [
 
 [[package]]
 name = "rabia-leader"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -811,7 +811,7 @@ dependencies = [
 
 [[package]]
 name = "rabia-network"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "async-trait",
  "rabia-core",
@@ -825,7 +825,7 @@ dependencies = [
 
 [[package]]
 name = "rabia-persistence"
-version = "0.2.0"
+version = "0.2.1"
 dependencies = [
  "anyhow",
  "async-trait",
