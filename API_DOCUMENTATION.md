@@ -372,11 +372,11 @@ store.apply_batch(operations).await?;
 
 ### Performance Characteristics
 
-- **Throughput**: 12,563 batches/second (up to 12.5M commands/second)
-- **Latency**: ~79.6μs for 1000-command batches
+- **High Throughput**: Optimized for concurrent batch processing
+- **Low Latency**: Microsecond-scale operation processing
 - **Concurrency**: Thread-safe operations with DashMap
 - **Memory**: Efficient pooling and cleanup
-- **Serialization**: Binary format 9.7x faster than JSON
+- **Serialization**: Compact binary format for reduced overhead
 
 ---
 

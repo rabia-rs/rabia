@@ -1,6 +1,6 @@
-use std::sync::{Arc, Mutex};
-use std::collections::VecDeque;
 use bytes::Bytes;
+use std::collections::VecDeque;
+use std::sync::{Arc, Mutex};
 
 /// A simple memory pool for reusing byte buffers to reduce allocations
 pub struct MemoryPool {
@@ -21,10 +21,10 @@ pub struct PoolConfig {
 impl Default for PoolConfig {
     fn default() -> Self {
         Self {
-            small_buffer_size: 1024,      // 1KB for typical messages
-            medium_buffer_size: 8192,     // 8KB for batch messages
-            large_buffer_size: 65536,     // 64KB for large batches
-            max_pool_size: 100,           // Max pooled buffers per size
+            small_buffer_size: 1024,  // 1KB for typical messages
+            medium_buffer_size: 8192, // 8KB for batch messages
+            large_buffer_size: 65536, // 64KB for large batches
+            max_pool_size: 100,       // Max pooled buffers per size
         }
     }
 }
@@ -51,7 +51,9 @@ impl MemoryPool {
             (buffer, self.medium_buffers.clone(), 8192)
         } else {
             let mut pool = self.large_buffers.lock().unwrap();
-            let buffer = pool.pop_front().unwrap_or_else(|| Vec::with_capacity(65536.max(min_size)));
+            let buffer = pool
+                .pop_front()
+                .unwrap_or_else(|| Vec::with_capacity(65536.max(min_size)));
             (buffer, self.large_buffers.clone(), 65536.max(min_size))
         };
 
@@ -66,14 +68,20 @@ impl MemoryPool {
     /// Pre-warm the pool with buffers
     pub fn warm_up(&self) {
         let config = PoolConfig::default();
-        
+
         // Pre-allocate some buffers
         for _ in 0..10 {
-            self.small_buffers.lock().unwrap()
+            self.small_buffers
+                .lock()
+                .unwrap()
                 .push_back(Vec::with_capacity(config.small_buffer_size));
-            self.medium_buffers.lock().unwrap()
+            self.medium_buffers
+                .lock()
+                .unwrap()
                 .push_back(Vec::with_capacity(config.medium_buffer_size));
-            self.large_buffers.lock().unwrap()
+            self.large_buffers
+                .lock()
+                .unwrap()
                 .push_back(Vec::with_capacity(config.large_buffer_size));
         }
     }
@@ -150,7 +158,7 @@ impl Drop for PooledBuffer {
     fn drop(&mut self) {
         // Clear the buffer but keep capacity
         self.buffer.clear();
-        
+
         // Only return to pool if it's the right size and pool isn't full
         if self.buffer.capacity() == self.original_capacity {
             let mut pool = self.pool.lock().unwrap();
@@ -168,7 +176,7 @@ pub struct PoolStats {
     pub large_buffers_available: usize,
 }
 
-/// Thread-local memory pool for high-performance scenarios
+// Thread-local memory pool for high-performance scenarios
 thread_local! {
     static LOCAL_POOL: MemoryPool = {
         let pool = MemoryPool::default();
@@ -201,11 +209,15 @@ impl StringPool {
     pub fn get_string(&self, min_capacity: usize) -> PooledString {
         let (string, pool, is_large) = if min_capacity <= 256 {
             let mut pool = self.small_strings.lock().unwrap();
-            let string = pool.pop_front().unwrap_or_else(|| String::with_capacity(256));
+            let string = pool
+                .pop_front()
+                .unwrap_or_else(|| String::with_capacity(256));
             (string, self.small_strings.clone(), false)
         } else {
             let mut pool = self.large_strings.lock().unwrap();
-            let string = pool.pop_front().unwrap_or_else(|| String::with_capacity(1024.max(min_capacity)));
+            let string = pool
+                .pop_front()
+                .unwrap_or_else(|| String::with_capacity(1024.max(min_capacity)));
             (string, self.large_strings.clone(), true)
         };
 
@@ -227,6 +239,7 @@ impl Default for StringPool {
 pub struct PooledString {
     string: String,
     pool: Arc<Mutex<VecDeque<String>>>,
+    #[allow(dead_code)]
     is_large: bool,
     max_pool_size: usize,
 }
@@ -270,14 +283,14 @@ mod tests {
     #[test]
     fn test_memory_pool_basic() {
         let pool = MemoryPool::default();
-        
+
         let mut buffer = pool.get_buffer(100);
         buffer.buffer_mut().extend_from_slice(b"hello world");
         assert_eq!(buffer.len(), 11);
-        
+
         // Drop the buffer, should return to pool
         drop(buffer);
-        
+
         // Get another buffer, should reuse the previous one
         let stats = pool.stats();
         assert!(stats.small_buffers_available > 0);
@@ -286,11 +299,11 @@ mod tests {
     #[test]
     fn test_different_buffer_sizes() {
         let pool = MemoryPool::default();
-        
-        let small = pool.get_buffer(500);      // Should use small pool
-        let medium = pool.get_buffer(4000);    // Should use medium pool  
-        let large = pool.get_buffer(32000);    // Should use large pool
-        
+
+        let small = pool.get_buffer(500); // Should use small pool
+        let medium = pool.get_buffer(4000); // Should use medium pool
+        let large = pool.get_buffer(32000); // Should use large pool
+
         assert!(small.buffer.capacity() >= 500);
         assert!(medium.buffer.capacity() >= 4000);
         assert!(large.buffer.capacity() >= 32000);
@@ -300,7 +313,7 @@ mod tests {
     fn test_thread_local_pool() {
         let buffer1 = get_pooled_buffer(100);
         let buffer2 = get_pooled_buffer(200);
-        
+
         assert!(buffer1.buffer.capacity() >= 100);
         assert!(buffer2.buffer.capacity() >= 200);
     }
@@ -308,13 +321,13 @@ mod tests {
     #[test]
     fn test_string_pool() {
         let pool = StringPool::default();
-        
+
         let mut string = pool.get_string(100);
         string.push_str("hello");
         string.push_str(" world");
-        
+
         assert_eq!(string.as_str(), "hello world");
-        
+
         // Test conversion to owned string
         let owned = string.into_string();
         assert_eq!(owned, "hello world");
@@ -324,10 +337,10 @@ mod tests {
     fn test_pooled_buffer_bytes() {
         let pool = MemoryPool::default();
         let mut buffer = pool.get_buffer(100);
-        
+
         buffer.buffer_mut().extend_from_slice(b"test data");
         let bytes = buffer.take_bytes();
-        
+
         assert_eq!(bytes.as_ref(), b"test data");
         assert_eq!(buffer.len(), 0); // Buffer should be empty after taking bytes
     }

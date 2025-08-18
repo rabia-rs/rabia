@@ -1,11 +1,18 @@
 [package]
 name = "rabia-network"
-version = "0.1.0"
-edition = "2021"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+repository.workspace = true
+homepage.workspace = true
+documentation.workspace = true
+authors.workspace = true
+keywords.workspace = true
+categories.workspace = true
 description = "Network abstraction layer for Rabia consensus protocol"
 
 [dependencies]
-rabia-core = { path = "../rabia-core" }
+rabia-core = { path = "../rabia-core", version = "0.2.0" }
 tokio = { workspace = true }
 serde = { workspace = true }
 uuid = { workspace = true }

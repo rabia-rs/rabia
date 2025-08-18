@@ -3,16 +3,16 @@
 //! Production-grade key-value store with consensus integration and change notifications.
 //! This is focused purely on the storage operations and data management.
 
-use std::collections::HashMap;
-use std::sync::Arc;
-use std::time::{SystemTime, UNIX_EPOCH};
+use crate::notifications::{ChangeNotification, ChangeType, NotificationBus};
+use crate::operations::{KVOperation, KVResult, StoreError};
 use dashmap::DashMap;
 use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
+use std::sync::Arc;
+use std::time::{SystemTime, UNIX_EPOCH};
 use tokio::sync::watch;
 use tracing::{debug, info};
-use crate::notifications::{ChangeNotification, NotificationBus, ChangeType};
-use crate::operations::{KVOperation, KVResult, StoreError};
 
 /// Configuration for the KVStore
 #[derive(Debug, Clone)]
@@ -58,7 +58,7 @@ impl ValueEntry {
             .unwrap()
             .as_millis() as u64;
         let size = value.len();
-        
+
         Self {
             value,
             version: 1,
@@ -102,21 +102,22 @@ pub struct StoreSnapshot {
 pub struct KVStore {
     /// Configuration
     config: KVStoreConfig,
-    
+
     /// Main data storage
     data: Arc<DashMap<String, ValueEntry>>,
-    
+
     /// Store statistics
     stats: Arc<RwLock<StoreStats>>,
-    
+
     /// Global version counter
     version: Arc<std::sync::atomic::AtomicU64>,
-    
+
     /// Notification bus for change events
     notification_bus: Arc<NotificationBus>,
-    
+
     /// Shutdown signal
     shutdown_tx: watch::Sender<bool>,
+    #[allow(dead_code)]
     shutdown_rx: watch::Receiver<bool>,
 }
 
@@ -124,7 +125,7 @@ impl KVStore {
     /// Create a new KVStore instance
     pub async fn new(config: KVStoreConfig) -> Result<Self, StoreError> {
         let (shutdown_tx, shutdown_rx) = watch::channel(false);
-        
+
         let store = Self {
             config: config.clone(),
             data: Arc::new(DashMap::new()),
@@ -152,12 +153,13 @@ impl KVStore {
             if self.data.len() >= self.config.max_keys {
                 return Err(StoreError::StoreFull);
             }
-            self.data.insert(key.to_string(), ValueEntry::new(value.to_string()));
+            self.data
+                .insert(key.to_string(), ValueEntry::new(value.to_string()));
             None
         };
 
         self.increment_operation_count();
-        
+
         // Send notification if enabled
         if self.config.enable_notifications {
             let change_type = if old_value.is_some() {
@@ -165,7 +167,7 @@ impl KVStore {
             } else {
                 ChangeType::Created
             };
-            
+
             let notification = ChangeNotification {
                 key: key.to_string(),
                 change_type,
@@ -177,7 +179,7 @@ impl KVStore {
                     .unwrap()
                     .as_millis() as u64,
             };
-            
+
             self.notification_bus.publish(notification).await;
         }
 
@@ -188,10 +190,10 @@ impl KVStore {
     /// Get a value by key
     pub async fn get(&self, key: &str) -> Result<Option<String>, StoreError> {
         self.validate_key(key)?;
-        
+
         let result = self.data.get(key).map(|entry| entry.value.clone());
         self.increment_operation_count();
-        
+
         debug!("GET operation: key={}, found={}", key, result.is_some());
         Ok(result)
     }
@@ -199,18 +201,22 @@ impl KVStore {
     /// Get a value with metadata
     pub async fn get_with_metadata(&self, key: &str) -> Result<Option<ValueEntry>, StoreError> {
         self.validate_key(key)?;
-        
+
         let result = self.data.get(key).map(|entry| entry.clone());
         self.increment_operation_count();
-        
-        debug!("GET_META operation: key={}, found={}", key, result.is_some());
+
+        debug!(
+            "GET_META operation: key={}, found={}",
+            key,
+            result.is_some()
+        );
         Ok(result)
     }
 
     /// Delete a key
     pub async fn delete(&self, key: &str) -> Result<KVResult, StoreError> {
         self.validate_key(key)?;
-        
+
         let old_value = self.data.remove(key).map(|(_, entry)| entry.value);
         self.increment_operation_count();
 
@@ -227,12 +233,16 @@ impl KVStore {
                     .unwrap()
                     .as_millis() as u64,
             };
-            
+
             self.notification_bus.publish(notification).await;
         }
 
-        debug!("DELETE operation: key={}, existed={}", key, old_value.is_some());
-        
+        debug!(
+            "DELETE operation: key={}, existed={}",
+            key,
+            old_value.is_some()
+        );
+
         if old_value.is_some() {
             Ok(KVResult::Success)
         } else {
@@ -243,10 +253,10 @@ impl KVStore {
     /// Check if a key exists
     pub async fn exists(&self, key: &str) -> Result<bool, StoreError> {
         self.validate_key(key)?;
-        
+
         let exists = self.data.contains_key(key);
         self.increment_operation_count();
-        
+
         debug!("EXISTS operation: key={}, exists={}", key, exists);
         Ok(exists)
     }
@@ -292,7 +302,7 @@ impl KVStore {
                     .unwrap()
                     .as_millis() as u64,
             };
-            
+
             self.notification_bus.publish(notification).await;
         }
 
@@ -301,16 +311,17 @@ impl KVStore {
     }
 
     /// Process a batch of operations atomically
-    pub async fn apply_batch(&self, operations: Vec<KVOperation>) -> Result<Vec<KVResult>, StoreError> {
+    pub async fn apply_batch(
+        &self,
+        operations: Vec<KVOperation>,
+    ) -> Result<Vec<KVResult>, StoreError> {
         let mut results = Vec::with_capacity(operations.len());
-        
+
         // In a production implementation, this would use transactions
         // For now, we apply operations sequentially
         for operation in operations {
             let result = match operation {
-                KVOperation::Set { key, value } => {
-                    self.set(&key, &value).await?
-                }
+                KVOperation::Set { key, value } => self.set(&key, &value).await?,
                 KVOperation::Get { key } => {
                     let value = self.get(&key).await?;
                     if value.is_some() {
@@ -319,9 +330,7 @@ impl KVStore {
                         KVResult::NotFound
                     }
                 }
-                KVOperation::Delete { key } => {
-                    self.delete(&key).await?
-                }
+                KVOperation::Delete { key } => self.delete(&key).await?,
                 KVOperation::Exists { key } => {
                     let exists = self.exists(&key).await?;
                     if exists {
@@ -340,7 +349,8 @@ impl KVStore {
 
     /// Create a snapshot of the current state
     pub async fn create_snapshot(&self) -> Result<StoreSnapshot, StoreError> {
-        let data: HashMap<String, ValueEntry> = self.data
+        let data: HashMap<String, ValueEntry> = self
+            .data
             .iter()
             .map(|entry| (entry.key().clone(), entry.value().clone()))
             .collect();
@@ -368,7 +378,11 @@ impl KVStore {
             stats.operations_since_snapshot = 0;
         }
 
-        info!("Snapshot created: version={}, keys={}", version, snapshot.data.len());
+        info!(
+            "Snapshot created: version={}, keys={}",
+            version,
+            snapshot.data.len()
+        );
         Ok(snapshot)
     }
 
@@ -386,9 +400,14 @@ impl KVStore {
             self.data.insert(key, value);
         }
 
-        self.version.store(snapshot.version, std::sync::atomic::Ordering::Release);
+        self.version
+            .store(snapshot.version, std::sync::atomic::Ordering::Release);
 
-        info!("Snapshot restored: version={}, keys={}", snapshot.version, self.data.len());
+        info!(
+            "Snapshot restored: version={}, keys={}",
+            snapshot.version,
+            self.data.len()
+        );
         Ok(())
     }
 
@@ -438,7 +457,8 @@ impl KVStore {
     }
 
     fn get_version(&self) -> u64 {
-        self.version.fetch_add(1, std::sync::atomic::Ordering::AcqRel)
+        self.version
+            .fetch_add(1, std::sync::atomic::Ordering::AcqRel)
     }
 
     fn calculate_checksum(&self, data: &HashMap<String, ValueEntry>) -> u64 {
@@ -501,9 +521,17 @@ mod tests {
         let store = KVStore::new(config).await.unwrap();
 
         let operations = vec![
-            KVOperation::Set { key: "key1".to_string(), value: "value1".to_string() },
-            KVOperation::Set { key: "key2".to_string(), value: "value2".to_string() },
-            KVOperation::Get { key: "key1".to_string() },
+            KVOperation::Set {
+                key: "key1".to_string(),
+                value: "value1".to_string(),
+            },
+            KVOperation::Set {
+                key: "key2".to_string(),
+                value: "value2".to_string(),
+            },
+            KVOperation::Get {
+                key: "key1".to_string(),
+            },
         ];
 
         let results = store.apply_batch(operations).await.unwrap();

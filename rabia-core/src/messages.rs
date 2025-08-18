@@ -1,7 +1,7 @@
+use crate::state_machine::Snapshot;
+use crate::{BatchId, CommandBatch, NodeId, PhaseId, StateValue};
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use crate::{NodeId, PhaseId, BatchId, CommandBatch, StateValue};
-use crate::state_machine::Snapshot;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ProtocolMessage {
@@ -182,7 +182,11 @@ impl PhaseData {
         self.count_votes(&self.round2_votes, quorum_size)
     }
 
-    fn count_votes(&self, votes: &HashMap<NodeId, StateValue>, quorum_size: usize) -> Option<StateValue> {
+    fn count_votes(
+        &self,
+        votes: &HashMap<NodeId, StateValue>,
+        quorum_size: usize,
+    ) -> Option<StateValue> {
         let mut v0_count = 0;
         let mut v1_count = 0;
         let mut vq_count = 0;
@@ -211,7 +215,7 @@ impl PhaseData {
     }
 
     pub fn set_decision(&mut self, decision: StateValue) {
-        self.decision = Some(decision.clone());
+        self.decision = Some(decision);
         if decision != StateValue::VQuestion {
             self.is_committed = true;
         }

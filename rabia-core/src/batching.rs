@@ -1,8 +1,8 @@
+use crate::{Command, CommandBatch, RabiaError, Result};
 use std::collections::VecDeque;
 use std::time::{Duration, Instant};
 use tokio::sync::mpsc;
 use tokio::time::timeout;
-use crate::{Command, CommandBatch, Result, RabiaError};
 
 /// Configuration for batching behavior
 #[derive(Debug, Clone)]
@@ -126,16 +126,16 @@ impl CommandBatcher {
     fn flush_batch(&mut self) -> CommandBatch {
         let batch_size = self.current_batch_size().min(self.buffer.len());
         let commands: Vec<Command> = self.buffer.drain(..batch_size).collect();
-        
+
         let batch = CommandBatch::new(commands);
         self.stats.record_batch(batch.commands.len());
         self.last_flush = Instant::now();
-        
+
         // Adaptive batching: adjust batch size based on performance
         if self.config.adaptive {
             self.adjust_adaptive_batch_size();
         }
-        
+
         batch
     }
 
@@ -151,10 +151,11 @@ impl CommandBatcher {
         // Simple adaptive algorithm: increase batch size if we're consistently flushing due to size
         // decrease if we're often flushing due to timeout
         let size_ratio = self.stats.total_batches as f64 / (self.stats.flush_timeouts + 1) as f64;
-        
+
         if size_ratio > 2.0 && self.adaptive_batch_size < self.config.max_batch_size {
             // Mostly size-based flushes, can increase batch size
-            self.adaptive_batch_size = (self.adaptive_batch_size * 11 / 10).min(self.config.max_batch_size);
+            self.adaptive_batch_size =
+                (self.adaptive_batch_size * 11 / 10).min(self.config.max_batch_size);
             self.stats.adaptive_adjustments += 1;
         } else if size_ratio < 0.5 && self.adaptive_batch_size > 10 {
             // Mostly timeout-based flushes, should decrease batch size
@@ -168,6 +169,7 @@ impl CommandBatcher {
 pub struct AsyncCommandBatcher {
     command_tx: mpsc::UnboundedSender<Command>,
     batch_rx: mpsc::UnboundedReceiver<CommandBatch>,
+    #[allow(dead_code)]
     stats_tx: mpsc::UnboundedSender<BatchStats>,
     _task_handle: tokio::task::JoinHandle<()>,
 }
@@ -177,12 +179,12 @@ impl AsyncCommandBatcher {
         let (command_tx, mut command_rx) = mpsc::unbounded_channel();
         let (batch_tx, batch_rx) = mpsc::unbounded_channel();
         let (stats_tx, mut stats_rx) = mpsc::unbounded_channel();
-        
+
         let config_clone = config.clone();
         let task_handle = tokio::spawn(async move {
             let mut batcher = CommandBatcher::new(config_clone);
             let mut flush_interval = tokio::time::interval(config.max_batch_delay);
-            
+
             loop {
                 tokio::select! {
                     // Process incoming commands
@@ -202,7 +204,7 @@ impl AsyncCommandBatcher {
                             None => break, // Command sender dropped
                         }
                     }
-                    
+
                     // Periodic flush for time-based batching
                     _ = flush_interval.tick() => {
                         if let Some(batch) = batcher.flush() {
@@ -211,7 +213,7 @@ impl AsyncCommandBatcher {
                             }
                         }
                     }
-                    
+
                     // Handle stats requests
                     _ = stats_rx.recv() => {
                         // Stats request received, sender already has reference to send back
@@ -230,7 +232,8 @@ impl AsyncCommandBatcher {
 
     /// Add a command for batching
     pub fn add_command(&self, command: Command) -> Result<()> {
-        self.command_tx.send(command)
+        self.command_tx
+            .send(command)
             .map_err(|_| RabiaError::internal("Batcher task has stopped"))
     }
 
@@ -248,7 +251,9 @@ impl AsyncCommandBatcher {
     pub async fn next_batch_timeout(&mut self, duration: Duration) -> Result<CommandBatch> {
         timeout(duration, self.batch_rx.recv())
             .await
-            .map_err(|_| RabiaError::Timeout { operation: "batch receive".to_string() })?
+            .map_err(|_| RabiaError::Timeout {
+                operation: "batch receive".to_string(),
+            })?
             .ok_or_else(|| RabiaError::internal("Batcher task has stopped"))
     }
 }
@@ -280,13 +285,17 @@ impl BatchProcessor {
     }
 
     /// Process a batch of commands efficiently
-    pub async fn process_batch<F, Fut>(&self, batch: CommandBatch, mut processor: F) -> Result<Vec<bytes::Bytes>>
+    pub async fn process_batch<F, Fut>(
+        &self,
+        batch: CommandBatch,
+        mut processor: F,
+    ) -> Result<Vec<bytes::Bytes>>
     where
         F: FnMut(&Command) -> Fut,
         Fut: std::future::Future<Output = Result<bytes::Bytes>>,
     {
         let mut commands = batch.commands;
-        
+
         // Apply transformation if configured
         if let Some(transform) = self.transform_fn {
             for command in &mut commands {
@@ -296,7 +305,7 @@ impl BatchProcessor {
 
         if self.parallel && commands.len() > 1 {
             // Process commands in parallel
-            let futures = commands.iter().map(|cmd| processor(cmd));
+            let futures = commands.iter().map(&mut processor);
             let results = futures_util::future::try_join_all(futures).await?;
             Ok(results)
         } else {
@@ -328,17 +337,25 @@ mod tests {
             buffer_capacity: 10,
             adaptive: false,
         };
-        
+
         let mut batcher = CommandBatcher::new(config);
-        
+
         // Add commands one by one
-        assert!(batcher.add_command(Command::new("SET key1 value1")).unwrap().is_none());
-        assert!(batcher.add_command(Command::new("SET key2 value2")).unwrap().is_none());
-        
+        assert!(batcher
+            .add_command(Command::new("SET key1 value1"))
+            .unwrap()
+            .is_none());
+        assert!(batcher
+            .add_command(Command::new("SET key2 value2"))
+            .unwrap()
+            .is_none());
+
         // Third command should trigger flush
-        let batch = batcher.add_command(Command::new("SET key3 value3")).unwrap();
+        let batch = batcher
+            .add_command(Command::new("SET key3 value3"))
+            .unwrap();
         assert!(batch.is_some());
-        
+
         let batch = batch.unwrap();
         assert_eq!(batch.commands.len(), 3);
     }
@@ -347,10 +364,14 @@ mod tests {
     fn test_batcher_flush() {
         let config = BatchConfig::default();
         let mut batcher = CommandBatcher::new(config);
-        
-        batcher.add_command(Command::new("SET key1 value1")).unwrap();
-        batcher.add_command(Command::new("SET key2 value2")).unwrap();
-        
+
+        batcher
+            .add_command(Command::new("SET key1 value1"))
+            .unwrap();
+        batcher
+            .add_command(Command::new("SET key2 value2"))
+            .unwrap();
+
         let batch = batcher.flush().unwrap();
         assert_eq!(batch.commands.len(), 2);
         assert!(batcher.is_empty());
@@ -364,13 +385,17 @@ mod tests {
             buffer_capacity: 10,
             adaptive: false,
         };
-        
+
         let mut async_batcher = AsyncCommandBatcher::new(config);
-        
+
         // Add commands
-        async_batcher.add_command(Command::new("SET key1 value1")).unwrap();
-        async_batcher.add_command(Command::new("SET key2 value2")).unwrap();
-        
+        async_batcher
+            .add_command(Command::new("SET key1 value1"))
+            .unwrap();
+        async_batcher
+            .add_command(Command::new("SET key2 value2"))
+            .unwrap();
+
         // Should get a batch immediately due to size limit
         let batch = async_batcher.next_batch().await.unwrap();
         assert_eq!(batch.commands.len(), 2);
@@ -384,34 +409,45 @@ mod tests {
             buffer_capacity: 10,
             adaptive: false,
         };
-        
+
         let mut async_batcher = AsyncCommandBatcher::new(config);
-        
+
         // Add a single command
-        async_batcher.add_command(Command::new("SET key1 value1")).unwrap();
-        
+        async_batcher
+            .add_command(Command::new("SET key1 value1"))
+            .unwrap();
+
         // Should get a batch after timeout
-        let batch = async_batcher.next_batch_timeout(Duration::from_millis(100)).await.unwrap();
+        let batch = async_batcher
+            .next_batch_timeout(Duration::from_millis(100))
+            .await
+            .unwrap();
         assert_eq!(batch.commands.len(), 1);
     }
 
     #[tokio::test]
     async fn test_batch_processor() {
         let processor = BatchProcessor::new().with_parallel(false);
-        
+
         let commands = vec![
             Command::new("SET key1 value1"),
             Command::new("SET key2 value2"),
         ];
         let batch = CommandBatch::new(commands);
-        
-        let results = processor.process_batch(batch, |cmd| {
-            let data = cmd.data.clone();
-            async move {
-                Ok(bytes::Bytes::from(format!("processed: {}", String::from_utf8_lossy(&data))))
-            }
-        }).await.unwrap();
-        
+
+        let results = processor
+            .process_batch(batch, |cmd| {
+                let data = cmd.data.clone();
+                async move {
+                    Ok(bytes::Bytes::from(format!(
+                        "processed: {}",
+                        String::from_utf8_lossy(&data)
+                    )))
+                }
+            })
+            .await
+            .unwrap();
+
         assert_eq!(results.len(), 2);
         assert!(results[0].starts_with(b"processed:"));
     }

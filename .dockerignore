@@ -1,0 +1,38 @@
+# Build artifacts
+target/
+!target/release/basic_usage
+!target/release/kvstore_usage
+!target/release/consensus_cluster
+!target/release/performance_benchmark
+
+# Git
+.git/
+.gitignore
+
+# CI/CD
+.github/
+
+# Development files
+.claude/
+*.swp
+*.swo
+*~
+
+# Documentation build artifacts
+book/
+
+# IDE files
+.vscode/
+.idea/
+*.iml
+
+# Temporary files
+*.tmp
+*.temp
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log

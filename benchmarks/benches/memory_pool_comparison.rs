@@ -1,7 +1,7 @@
-use criterion::{black_box, criterion_group, criterion_main, Criterion, BatchSize};
-use rabia_core::{Command, CommandBatch, messages::*, PhaseId, NodeId, StateValue, BatchId};
+use criterion::{black_box, criterion_group, criterion_main, BatchSize, Criterion};
+use rabia_core::memory_pool::{get_pooled_buffer, MemoryPool};
 use rabia_core::serialization::Serializer;
-use rabia_core::memory_pool::{MemoryPool, get_pooled_buffer};
+use rabia_core::{messages::*, BatchId, Command, CommandBatch, NodeId, PhaseId, StateValue};
 
 fn create_test_message() -> ProtocolMessage {
     ProtocolMessage::new(
@@ -28,7 +28,7 @@ fn benchmark_memory_allocation_comparison(c: &mut Criterion) {
     // Benchmark regular serialization (allocates new Vec each time)
     c.bench_function("regular_serialization", |b| {
         b.iter_batched(
-            || create_test_message(),
+            create_test_message,
             |message| {
                 let _serialized = serializer.serialize_message(black_box(&message)).unwrap();
             },
@@ -39,9 +39,11 @@ fn benchmark_memory_allocation_comparison(c: &mut Criterion) {
     // Benchmark pooled serialization (reuses buffers)
     c.bench_function("pooled_serialization", |b| {
         b.iter_batched(
-            || create_test_message(),
+            create_test_message,
             |message| {
-                let _pooled_buffer = serializer.serialize_message_pooled(black_box(&message)).unwrap();
+                let _pooled_buffer = serializer
+                    .serialize_message_pooled(black_box(&message))
+                    .unwrap();
             },
             BatchSize::SmallInput,
         )
@@ -65,7 +67,9 @@ fn benchmark_buffer_reuse(c: &mut Criterion) {
     c.bench_function("pooled_buffer_allocation", |b| {
         b.iter(|| {
             let mut buffer = get_pooled_buffer(1024);
-            buffer.buffer_mut().extend_from_slice(black_box(b"Hello, World! This is a test message."));
+            buffer
+                .buffer_mut()
+                .extend_from_slice(black_box(b"Hello, World! This is a test message."));
             buffer
         })
     });
@@ -89,7 +93,9 @@ fn benchmark_high_frequency_allocations(c: &mut Criterion) {
         b.iter(|| {
             for i in 0..100 {
                 let message = create_test_message();
-                let _pooled = serializer.serialize_message_pooled(black_box(&message)).unwrap();
+                let _pooled = serializer
+                    .serialize_message_pooled(black_box(&message))
+                    .unwrap();
                 std::hint::black_box(i);
             }
         })
@@ -131,7 +137,9 @@ fn benchmark_memory_pressure(c: &mut Criterion) {
         b.iter_batched(
             create_large_message,
             |message| {
-                let _pooled = serializer.serialize_message_pooled(black_box(&message)).unwrap();
+                let _pooled = serializer
+                    .serialize_message_pooled(black_box(&message))
+                    .unwrap();
             },
             BatchSize::SmallInput,
         )

@@ -1,18 +1,17 @@
 use async_trait::async_trait;
+use rabia_core::{
+    messages::ProtocolMessage, network::NetworkTransport, NodeId, RabiaError, Result,
+};
 use std::collections::{HashMap, HashSet, VecDeque};
 use std::sync::Arc;
 use tokio::sync::{mpsc, Mutex};
-use rabia_core::{
-    NodeId, Result, RabiaError,
-    messages::ProtocolMessage,
-    network::NetworkTransport,
-};
 
 #[derive(Debug)]
 pub struct InMemoryNetwork {
     node_id: NodeId,
     message_queue: Arc<Mutex<VecDeque<(NodeId, ProtocolMessage)>>>,
     connected_nodes: Arc<Mutex<HashSet<NodeId>>>,
+    #[allow(clippy::type_complexity)]
     network_bus: Arc<Mutex<Option<mpsc::UnboundedSender<(NodeId, NodeId, ProtocolMessage)>>>>,
 }
 
@@ -26,7 +25,10 @@ impl InMemoryNetwork {
         }
     }
 
-    pub async fn connect_to_bus(&self, bus: mpsc::UnboundedSender<(NodeId, NodeId, ProtocolMessage)>) {
+    pub async fn connect_to_bus(
+        &self,
+        bus: mpsc::UnboundedSender<(NodeId, NodeId, ProtocolMessage)>,
+    ) {
         let mut network_bus = self.network_bus.lock().await;
         *network_bus = Some(bus);
     }
@@ -56,7 +58,7 @@ impl NetworkTransport for InMemoryNetwork {
     async fn broadcast(&self, message: ProtocolMessage, exclude: Option<NodeId>) -> Result<()> {
         let connected = self.connected_nodes.lock().await;
         let bus = self.network_bus.lock().await;
-        
+
         if let Some(bus) = bus.as_ref() {
             for &node_id in connected.iter() {
                 if Some(node_id) != exclude && node_id != self.node_id {
@@ -107,7 +109,10 @@ pub struct InMemoryNetworkSimulator {
 }
 
 impl InMemoryNetworkSimulator {
-    pub fn new() -> (Self, mpsc::UnboundedSender<(NodeId, NodeId, ProtocolMessage)>) {
+    pub fn new() -> (
+        Self,
+        mpsc::UnboundedSender<(NodeId, NodeId, ProtocolMessage)>,
+    ) {
         let (tx, rx) = mpsc::unbounded_channel();
         (
             Self {
@@ -118,7 +123,11 @@ impl InMemoryNetworkSimulator {
         )
     }
 
-    pub fn add_node(&mut self, node_id: NodeId, sender: mpsc::UnboundedSender<(NodeId, ProtocolMessage)>) {
+    pub fn add_node(
+        &mut self,
+        node_id: NodeId,
+        sender: mpsc::UnboundedSender<(NodeId, ProtocolMessage)>,
+    ) {
         self.nodes.insert(node_id, sender);
     }
 

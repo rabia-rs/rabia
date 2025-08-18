@@ -3,34 +3,32 @@
 [![License](https://img.shields.io/badge/license-Apache%202.0-blue.svg)](LICENSE)
 [![Crates.io](https://img.shields.io/crates/v/rabia-core.svg)](https://crates.io/crates/rabia-core)
 [![Documentation](https://docs.rs/rabia-core/badge.svg)](https://docs.rs/rabia-core)
-[![Build Status](https://github.com/rabia-rs/rabia/actions/workflows/ci.yml/badge.svg)](https://github.com/rabia-rs/rabia/actions)
+[![CI](https://github.com/rabia-rs/rabia/actions/workflows/ci.yml/badge.svg)](https://github.com/rabia-rs/rabia/actions/workflows/ci.yml)
+[![Security](https://github.com/rabia-rs/rabia/actions/workflows/security.yml/badge.svg)](https://github.com/rabia-rs/rabia/actions/workflows/security.yml)
+[![codecov](https://codecov.io/gh/rabia-rs/rabia/branch/main/graph/badge.svg)](https://codecov.io/gh/rabia-rs/rabia)
 
 A high-performance, production-ready Rust implementation of the **Rabia consensus protocol** - a randomized Byzantine-resilient consensus algorithm optimized for crash-fault tolerant systems.
 
 ## 🚀 Key Features
 
-- **High Performance**: Up to **12.5M commands/second** throughput with intelligent batching
+- **High Performance**: Intelligent batching and optimized serialization for maximum throughput
 - **Production Ready**: Comprehensive error handling, recovery mechanisms, and edge case handling  
 - **Memory Efficient**: Advanced memory pooling and zero-allocation serialization paths
-- **Binary Serialization**: 9.7x faster than JSON with 54.8% smaller message sizes
+- **Binary Serialization**: Compact binary format for efficient network communication
 - **Adaptive Batching**: Intelligent command grouping that adapts to load patterns
 - **Async/Await**: Built on Tokio for scalable concurrent processing
 - **Type Safe**: Leverages Rust's type system for correctness guarantees
 - **Well Tested**: Comprehensive test suite including network simulation and fault injection
 
-## 📊 Performance Benchmarks
+## 🎯 Performance Characteristics
 
-Our optimizations deliver exceptional performance:
+Rabia-rs is designed for high-performance consensus with:
 
-| Metric | Baseline (JSON) | Optimized (Binary + Batching) | Improvement |
-|--------|----------------|--------------------------------|-------------|
-| **Message Serialization** | 748ns | 96ns | **9.7x faster** |
-| **End-to-End Processing** | 282μs | 29μs | **9.6x faster** |
-| **High Throughput** | 6.5ms | 1.0ms | **6.5x faster** |
-| **Memory Efficiency** | 654μs | 99μs | **6.6x faster** |
-| **Message Size** | 655 bytes | 296 bytes | **54.8% smaller** |
-
-**Peak Consensus Throughput**: **12,563 batches/second** (up to 12.5M commands/second)
+- **Efficient Serialization**: Compact binary message format for reduced network overhead
+- **Adaptive Batching**: Automatically groups commands for optimal throughput
+- **Memory Optimization**: Advanced pooling reduces allocation overhead
+- **Async Architecture**: Non-blocking I/O for concurrent processing
+- **Zero-Copy Paths**: Minimizes data copying in hot code paths
 
 ## 🏗️ Architecture
 
@@ -42,6 +40,8 @@ rabia-rs/
 ├── rabia-engine/       # Consensus engine implementation  
 ├── rabia-network/      # Network transport abstractions
 ├── rabia-persistence/  # Persistence layer implementations
+├── rabia-kvstore/      # Production-grade key-value store
+├── rabia-leader/       # Leader management and cluster coordination
 ├── rabia-testing/      # Testing utilities and network simulation
 ├── examples/           # Usage examples and tutorials
 └── benchmarks/         # Performance benchmarks
@@ -57,15 +57,15 @@ rabia-rs/
 │ • Voting Logic  │    │ • Node Discovery│    │ • Snapshots     │
 │ • State Sync    │    │ • Fault Detect  │    │ • Recovery      │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
-         │
-         ▼
-┌─────────────────┐
-│  State Machine  │
-│                 │
-│ • Command Exec  │
-│ • Deterministic │
-│ • Snapshotting  │
-└─────────────────┘
+         │                        │
+         ▼                        ▼
+┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
+│  State Machine  │    │ Leader Manager  │────│    KV Store     │
+│                 │    │                 │    │                 │
+│ • Command Exec  │    │ • Elections     │    │ • Concurrent    │
+│ • Deterministic │    │ • Health Mon    │    │ • Notifications │
+│ • Snapshotting  │    │ • Topology      │    │ • Snapshots     │
+└─────────────────┘    └─────────────────┘    └─────────────────┘
 ```
 
 ## 🚀 Quick Start
@@ -74,8 +74,10 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-rabia-core = "0.1"
-rabia-engine = "0.1" 
+rabia-core = "0.2"
+rabia-engine = "0.2" 
+rabia-kvstore = "0.2"  # Optional: for key-value storage
+rabia-leader = "0.2"   # Optional: for leader management
 tokio = { version = "1.0", features = ["full"] }
 ```
 
@@ -154,10 +156,111 @@ use rabia_core::serialization::Serializer;
 // Use high-performance binary serialization
 let serializer = Serializer::binary();
 
-// 9.7x faster serialization + 54.8% smaller messages
+// High-performance binary serialization
 let message = create_consensus_message();
 let serialized = serializer.serialize_message(&message)?;
 let deserialized = serializer.deserialize_message(&serialized)?;
+```
+
+### Production KV Store
+
+```rust
+use rabia_kvstore::{KVStore, KVStoreConfig, NotificationFilter};
+use std::time::Duration;
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Configure high-performance KV store
+    let config = KVStoreConfig {
+        max_entries: 1_000_000,
+        max_memory_mb: 1024,
+        enable_notifications: true,
+        snapshot_interval: Duration::from_secs(300),
+        ..Default::default()
+    };
+    
+    let store = KVStore::new(config).await?;
+    
+    // Subscribe to change notifications
+    let (sub_id, mut notifications) = store
+        .subscribe(NotificationFilter::KeyPrefix("user:".to_string()))
+        .await?;
+    
+    // Concurrent operations
+    tokio::spawn(async move {
+        while let Some(notification) = notifications.recv().await {
+            println!("Key changed: {:?}", notification);
+        }
+    });
+    
+    // High-performance operations
+    store.set("user:1".to_string(), "data".into()).await?;
+    let value = store.get("user:1").await?;
+    
+    // Atomic transactions
+    store.transaction(|tx| async move {
+        tx.set("key1".to_string(), "value1".into()).await?;
+        tx.set("key2".to_string(), "value2".into()).await?;
+        Ok(())
+    }).await?;
+    
+    Ok(())
+}
+```
+
+### Leader Management & Cluster Coordination
+
+```rust
+use rabia_leader::{
+    LeaderManager, LeaderConfig, 
+    LeaderNotificationBus, NotificationFilter
+};
+use std::time::Duration;
+
+#[tokio::main]
+async fn main() -> Result<(), Box<dyn std::error::Error>> {
+    // Configure leader management
+    let config = LeaderConfig {
+        heartbeat_interval: Duration::from_millis(1000),
+        election_timeout: Duration::from_millis(5000),
+        min_healthy_nodes: 3,
+        auto_failover: true,
+        leadership_priority: 100,
+    };
+    
+    let leader_manager = std::sync::Arc::new(LeaderManager::new(config).await?);
+    let notification_bus = LeaderNotificationBus::new();
+    
+    // Subscribe to leadership events
+    let (sub_id, mut leadership_events) = notification_bus
+        .subscribe(NotificationFilter::Leadership)
+        .await?;
+    
+    // Handle leadership changes
+    tokio::spawn(async move {
+        while let Some(event) = leadership_events.recv().await {
+            match event {
+                LeaderNotification::Leadership(LeadershipChange::LeaderElected { node_id, term, .. }) => {
+                    println!("New leader elected: {} (term {})", node_id, term);
+                }
+                LeaderNotification::Topology(TopologyChange::QuorumChanged { has_quorum, .. }) => {
+                    println!("Cluster quorum: {}", has_quorum);
+                }
+                _ => {}
+            }
+        }
+    });
+    
+    // Start leader management
+    leader_manager.clone().start().await?;
+    
+    // Check leadership status
+    if leader_manager.is_leader().await {
+        println!("This node is the cluster leader");
+    }
+    
+    Ok(())
+}
 ```
 
 ## 🔧 Advanced Features
@@ -203,6 +306,39 @@ The `examples/` directory contains comprehensive examples:
 - **[Performance Tuning](examples/performance.rs)** - Optimization techniques
 - **[Fault Tolerance](examples/fault_tolerance.rs)** - Handling failures
 - **[Custom State Machine](examples/custom_state_machine.rs)** - Implementing your own state machine
+
+## 🐳 Docker Support
+
+Run Rabia examples using Docker:
+
+```bash
+# Build the Docker image
+docker build -t rabia-rs/rabia .
+
+# Run the KVStore example
+docker run --rm rabia-rs/rabia kvstore_usage
+
+# Run the consensus cluster example
+docker run --rm rabia-rs/rabia consensus_cluster
+
+# Run performance benchmarks
+docker run --rm rabia-rs/rabia performance_benchmark
+
+# Interactive shell with all examples available
+docker run --rm -it rabia-rs/rabia bash
+```
+
+### Pre-built Images
+
+Pull pre-built images from Docker Hub:
+
+```bash
+# Latest release
+docker pull rabiars/rabia:latest
+
+# Specific version
+docker pull rabiars/rabia:v0.2.0
+```
 
 ## 🧪 Testing
 

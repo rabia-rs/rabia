@@ -20,7 +20,7 @@ use uuid::Uuid;
 /// let node_id = NodeId::new();
 /// println!("Node ID: {}", node_id);
 /// ```
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub struct NodeId(pub Uuid);
 
 impl NodeId {
@@ -48,6 +48,15 @@ impl Default for NodeId {
 impl fmt::Display for NodeId {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.0)
+    }
+}
+
+impl From<u64> for NodeId {
+    fn from(id: u64) -> Self {
+        // Convert u64 to UUID for testing purposes
+        let mut bytes = [0u8; 16];
+        bytes[0..8].copy_from_slice(&id.to_be_bytes());
+        Self(Uuid::from_bytes(bytes))
     }
 }
 
@@ -194,7 +203,7 @@ pub enum StateValue {
     /// Vote to reject the proposed value
     V0,
     /// Vote to accept the proposed value
-    V1, 
+    V1,
     /// Undecided vote, used in randomization phase
     VQuestion,
 }
@@ -332,5 +341,45 @@ impl CommandBatch {
     pub fn checksum(&self) -> u32 {
         let serialized = serde_json::to_vec(self).unwrap_or_default();
         crc32fast::hash(&serialized)
+    }
+}
+
+/// Consensus state for a node in the cluster.
+///
+/// Represents the current operational state of consensus on a particular node.
+/// This is used by the leader manager to track which nodes are actively
+/// participating in consensus and coordinate cluster-wide consensus state.
+///
+/// # Examples
+///
+/// ```rust
+/// use rabia_core::ConsensusState;
+///
+/// let state = ConsensusState::Active;
+/// assert!(matches!(state, ConsensusState::Active));
+/// ```
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+pub enum ConsensusState {
+    /// Node is idle and not participating in consensus
+    Idle,
+    /// Node is actively participating in consensus
+    Active,
+    /// Node is catching up and learning from other nodes
+    Learning,
+    /// Node is temporarily suspended from consensus
+    Suspended,
+    /// Node consensus state is unknown
+    Unknown,
+}
+
+impl fmt::Display for ConsensusState {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            ConsensusState::Idle => write!(f, "Idle"),
+            ConsensusState::Active => write!(f, "Active"),
+            ConsensusState::Learning => write!(f, "Learning"),
+            ConsensusState::Suspended => write!(f, "Suspended"),
+            ConsensusState::Unknown => write!(f, "Unknown"),
+        }
     }
 }

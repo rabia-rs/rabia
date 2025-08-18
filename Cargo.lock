@@ -718,7 +718,7 @@ dependencies = [
 
 [[package]]
 name = "rabia-core"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "async-trait",
  "bincode",
@@ -735,7 +735,7 @@ dependencies = [
 
 [[package]]
 name = "rabia-engine"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -760,8 +760,10 @@ dependencies = [
  "rabia-core",
  "rabia-engine",
  "rabia-kvstore",
+ "rabia-leader",
  "rabia-network",
  "rabia-persistence",
+ "serde_json",
  "tokio",
  "tracing",
  "tracing-subscriber",
@@ -769,7 +771,7 @@ dependencies = [
 
 [[package]]
 name = "rabia-kvstore"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "async-trait",
  "bytes",
@@ -788,8 +790,28 @@ dependencies = [
 ]
 
 [[package]]
+name = "rabia-leader"
+version = "0.2.0"
+dependencies = [
+ "anyhow",
+ "async-trait",
+ "crossbeam-channel",
+ "dashmap",
+ "parking_lot",
+ "proptest",
+ "rabia-core",
+ "rand 0.8.5",
+ "serde",
+ "thiserror",
+ "tokio",
+ "tokio-test",
+ "tracing",
+ "uuid",
+]
+
+[[package]]
 name = "rabia-network"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "async-trait",
  "rabia-core",
@@ -803,7 +825,7 @@ dependencies = [
 
 [[package]]
 name = "rabia-persistence"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -830,6 +852,8 @@ dependencies = [
  "proptest",
  "rabia-core",
  "rabia-engine",
+ "rabia-kvstore",
+ "rabia-leader",
  "rabia-network",
  "rabia-persistence",
  "rand 0.8.5",

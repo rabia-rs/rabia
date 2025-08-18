@@ -3,12 +3,12 @@
 //! This example demonstrates comprehensive usage of the Rabia KVStore,
 //! including basic operations, batch processing, notifications, and snapshots.
 
+use rabia_kvstore::{
+    notifications::{ChangeType, NotificationFilter},
+    KVOperation, KVStore, KVStoreConfig,
+};
 use std::time::Duration;
 use tokio::time::sleep;
-use rabia_kvstore::{
-    KVStore, KVStoreConfig, KVOperation,
-    notifications::{ChangeType, NotificationFilter}
-};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -32,45 +32,47 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // 2. Set up notification listeners
     let notification_bus = store.notification_bus();
-    
+
     // Listen for all changes
     let mut all_changes = notification_bus.subscribe_all();
-    
+
     // Listen for changes to keys with "user:" prefix
     let mut user_changes = notification_bus.subscribe_prefix("user:");
-    
+
     // Listen only for deletions
     let mut deletion_changes = notification_bus.subscribe_change_type(ChangeType::Deleted);
 
     // Start background task to handle notifications
     tokio::spawn(async move {
         println!("🔔 Notification listeners started");
-        
+
         // Handle all changes
         tokio::spawn(async move {
             while let Some(notification) = all_changes.receiver.recv().await {
-                println!("📢 All changes: {} {} -> {:?}", 
-                         notification.change_type, 
-                         notification.key, 
-                         notification.new_value);
+                println!(
+                    "📢 All changes: {} {} -> {:?}",
+                    notification.change_type, notification.key, notification.new_value
+                );
             }
         });
-        
+
         // Handle user prefix changes
         tokio::spawn(async move {
             while let Some(notification) = user_changes.receiver.recv().await {
-                println!("👤 User change: {} {}", 
-                         notification.change_type, 
-                         notification.key);
+                println!(
+                    "👤 User change: {} {}",
+                    notification.change_type, notification.key
+                );
             }
         });
-        
+
         // Handle deletions
         tokio::spawn(async move {
             while let Some(notification) = deletion_changes.receiver.recv().await {
-                println!("🗑️  Deletion: {} (was: {:?})", 
-                         notification.key, 
-                         notification.old_value);
+                println!(
+                    "🗑️  Deletion: {} (was: {:?})",
+                    notification.key, notification.old_value
+                );
             }
         });
     });
@@ -108,19 +110,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("--------------------");
 
     let batch_ops = vec![
-        KVOperation::Set { 
-            key: "session:123".to_string(), 
-            value: "active".to_string() 
+        KVOperation::Set {
+            key: "session:123".to_string(),
+            value: "active".to_string(),
         },
-        KVOperation::Set { 
-            key: "session:456".to_string(), 
-            value: "inactive".to_string() 
+        KVOperation::Set {
+            key: "session:456".to_string(),
+            value: "inactive".to_string(),
         },
-        KVOperation::Get { 
-            key: "user:alice".to_string() 
+        KVOperation::Get {
+            key: "user:alice".to_string(),
         },
-        KVOperation::Delete { 
-            key: "user:bob".to_string() 
+        KVOperation::Delete {
+            key: "user:bob".to_string(),
         },
     ];
 
@@ -152,9 +154,18 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // Get notification statistics
     let notification_stats = notification_bus.get_stats();
     println!("✅ Notification statistics:");
-    println!("   - Total notifications sent: {}", notification_stats.total_notifications_sent);
-    println!("   - Active subscribers: {}", notification_stats.total_subscribers);
-    println!("   - Dropped notifications: {}", notification_stats.dropped_notifications);
+    println!(
+        "   - Total notifications sent: {}",
+        notification_stats.total_notifications_sent
+    );
+    println!(
+        "   - Active subscribers: {}",
+        notification_stats.total_subscribers
+    );
+    println!(
+        "   - Dropped notifications: {}",
+        notification_stats.dropped_notifications
+    );
 
     sleep(Duration::from_millis(200)).await;
 
@@ -200,16 +211,17 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     tokio::spawn(async move {
         while let Some(notification) = filtered_subscription.receiver.recv().await {
-            println!("🎯 Filtered notification: {} {}", 
-                     notification.change_type, 
-                     notification.key);
+            println!(
+                "🎯 Filtered notification: {} {}",
+                notification.change_type, notification.key
+            );
         }
     });
 
     // Trigger various operations to test filtering
     store.set("user:charlie", "Charlie Brown").await?; // Won't match (Create, not Update)
-    store.set("user:alice", "Alice Johnson").await?;   // Will match (Update + user: prefix)
-    store.set("app:debug", "true").await?;              // Won't match (wrong prefix)
+    store.set("user:alice", "Alice Johnson").await?; // Will match (Update + user: prefix)
+    store.set("app:debug", "true").await?; // Won't match (wrong prefix)
 
     sleep(Duration::from_millis(300)).await;
 
@@ -237,12 +249,14 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("-----------------------------");
 
     let start = std::time::Instant::now();
-    
+
     // Perform 100 operations
     for i in 0..100 {
-        store.set(&format!("perf:key{}", i), &format!("value{}", i)).await?;
+        store
+            .set(&format!("perf:key{}", i), &format!("value{}", i))
+            .await?;
     }
-    
+
     let duration = start.elapsed();
     println!("✅ 100 SET operations completed in {:?}", duration);
     println!("   - Average: {:?} per operation", duration / 100);
@@ -257,13 +271,16 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     // 10. Final statistics
     let final_stats = store.get_stats().await;
     let final_notification_stats = notification_bus.get_stats();
-    
+
     println!("\n📈 Final Statistics:");
     println!("--------------------");
     println!("✅ Store operations: {}", final_stats.total_operations);
     println!("✅ Final key count: {}", final_stats.total_keys);
-    println!("✅ Notifications sent: {}", final_notification_stats.total_notifications_sent);
-    
+    println!(
+        "✅ Notifications sent: {}",
+        final_notification_stats.total_notifications_sent
+    );
+
     // Graceful shutdown
     println!("\n🛑 Shutting down...");
     store.shutdown().await?;
