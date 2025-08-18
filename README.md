@@ -62,7 +62,7 @@ rabia-rs/
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
 │  State Machine  │    │ Leader Manager  │────│    KV Store     │
 │                 │    │                 │    │                 │
-│ • Command Exec  │    │ • Elections     │    │ • Concurrent    │
+│ • Command Exec  │    │ • Cluster Coord │    │ • Concurrent    │
 │ • Deterministic │    │ • Health Mon    │    │ • Notifications │
 │ • Snapshotting  │    │ • Topology      │    │ • Snapshots     │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
@@ -383,15 +383,17 @@ cargo bench --bench peak_performance
 
 The Rabia consensus protocol provides:
 
+- **No Leader, No Single Point of Failure**: Unlike Raft or PBFT, Rabia has no leader election delays or single points of failure
+- **Transparent Node Management**: Adding/removing nodes is virtually transparent to cluster operation
 - **Randomized Agreement**: Uses randomization to achieve consensus efficiently
 - **Crash Fault Tolerance**: Handles node crashes and network partitions
 - **Low Latency**: Typically 2-3 communication rounds for decision
 - **High Throughput**: Optimized for batch processing scenarios
-- **Simplicity**: Easier to understand and implement than Raft or PBFT
+- **Simplicity**: Easier to understand and implement than traditional consensus protocols
 
 ### Consensus Phases
 
-1. **Propose Phase**: Leader proposes a value
+1. **Propose Phase**: Any node can propose a value
 2. **Vote Round 1**: Nodes vote with randomization
 3. **Vote Round 2**: Final voting based on Round 1 results  
 4. **Decision**: Commit the agreed value
@@ -501,26 +503,22 @@ When contributing performance improvements:
 - [x] Performance optimizations (binary serialization, batching, memory pooling)
 - [x] Fault injection testing framework
 - [x] Production-grade error handling and validation
-
-### 🚧 In Progress  
-- [ ] Production-grade KV Store with notification system
-- [ ] Leader Manager implementation
-- [ ] Topology change notifications
-- [ ] Consensus appearance/disappearance notifications
+- [x] Production-grade KV Store with notification system
+- [x] Leader Manager implementation
+- [x] Topology change notifications
+- [x] Consensus appearance/disappearance notifications
 
 ### 📋 Roadmap
 
-- [ ] **v0.2.0**: Production KV Store with notifications
-- [ ] **v0.3.0**: Leader election and topology management  
-- [ ] **v0.4.0**: Multi-threaded consensus engine
-- [ ] **v0.5.0**: Persistent storage backends
-- [ ] **v1.0.0**: Production stability and guarantees
+- [x] **v0.2.0**: Production KV Store with notifications and leader management
+- [ ] **v0.3.0**: TCP networking and production deployment features  
+- [ ] **v1.0.0**: Production stability and long-term guarantees
 
 ## 🐛 Known Limitations
 
 - Currently implements crash fault tolerance (not Byzantine fault tolerance)
-- In-memory persistence only (disk persistence planned for v0.5.0)
-- Single-threaded consensus engine (multi-threading planned for v0.4.0)
+- In-memory persistence only (suitable for many use cases, external persistence can be implemented via traits)
+- Network layer uses in-memory simulation (TCP networking planned for v0.3.0)
 
 ## 📄 License
 

@@ -12,7 +12,7 @@ categories.workspace = true
 description = "Leader management and coordination for Rabia consensus clusters"
 
 [dependencies]
-rabia-core = { path = "../rabia-core", version = "0.2.0" }
+rabia-core = { path = "../rabia-core", version = "0.2.1" }
 tokio = { workspace = true }
 serde = { workspace = true }
 uuid = { workspace = true }
