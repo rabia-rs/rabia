@@ -21,6 +21,10 @@ name = "performance_benchmark"
 path = "performance_benchmark.rs"
 
 [[bin]]
+name = "tcp_networking"
+path = "tcp_networking.rs"
+
+[[bin]]
 name = "leader_usage"
 path = "leader_usage.rs"
 
