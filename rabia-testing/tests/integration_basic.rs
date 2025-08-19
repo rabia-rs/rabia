@@ -298,7 +298,7 @@ async fn test_engine_lifecycle() {
     tokio::time::sleep(Duration::from_millis(init_delay)).await;
 
     // Send shutdown command
-    if let Err(_) = cmd_tx.send(EngineCommand::Shutdown) {
+    if cmd_tx.send(EngineCommand::Shutdown).is_err() {
         // If sending shutdown fails, the engine may have already stopped
         println!("Shutdown command failed to send - engine may have stopped");
     }
