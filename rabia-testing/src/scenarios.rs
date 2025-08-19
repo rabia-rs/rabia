@@ -46,6 +46,7 @@ pub struct PerformanceBenchmark {
 }
 
 struct BenchmarkNode {
+    #[allow(dead_code)]
     node_id: NodeId,
     engine_tx: EngineCommandSender,
     #[allow(dead_code)]
@@ -56,6 +57,7 @@ struct BenchmarkNode {
 struct OperationResult {
     latency: Duration,
     success: bool,
+    #[allow(dead_code)]
     timestamp: Instant,
 }
 

@@ -17,8 +17,8 @@ use std::net::SocketAddr;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
-use tokio::net::{TcpListener, TcpStream};
 use tokio::io::{ReadHalf, WriteHalf};
+use tokio::net::{TcpListener, TcpStream};
 use tokio::sync::{mpsc, Mutex, RwLock};
 use tokio::time::{sleep, timeout};
 use tracing::{debug, error, info, warn};
@@ -175,11 +175,13 @@ impl MessageFrame {
 #[derive(Debug)]
 struct ConnectionInfo {
     node_id: NodeId,
+    #[allow(dead_code)]
     addr: SocketAddr,
     reader: Arc<Mutex<ReadHalf<TcpStream>>>,
     writer: Arc<Mutex<WriteHalf<TcpStream>>>,
     last_seen: Instant,
     outbound_queue: mpsc::UnboundedSender<ProtocolMessage>,
+    #[allow(dead_code)]
     is_outbound: bool,
 }
 
@@ -190,6 +192,7 @@ pub struct TcpNetwork {
     /// Configuration
     config: TcpNetworkConfig,
     /// TCP listener for incoming connections
+    #[allow(dead_code)]
     listener: Option<TcpListener>,
     /// Active connections by node ID
     connections: Arc<RwLock<HashMap<NodeId, Arc<ConnectionInfo>>>>,
@@ -360,7 +363,12 @@ impl TcpNetwork {
         }
 
         // Start connection handler
-        tokio::spawn(Self::run_connection_handler(connection_info, outbound_rx, message_tx, config));
+        tokio::spawn(Self::run_connection_handler(
+            connection_info,
+            outbound_rx,
+            message_tx,
+            config,
+        ));
 
         Ok(())
     }
@@ -757,10 +765,11 @@ impl NetworkTransport for TcpNetwork {
         let mut failed_nodes = Vec::new();
 
         for (node_id, connection) in connections.iter() {
-            if Some(*node_id) != exclude && *node_id != self.node_id {
-                if let Err(_) = connection.outbound_queue.send(message.clone()) {
-                    failed_nodes.push(*node_id);
-                }
+            if Some(*node_id) != exclude
+                && *node_id != self.node_id
+                && connection.outbound_queue.send(message.clone()).is_err()
+            {
+                failed_nodes.push(*node_id);
             }
         }
 
@@ -854,7 +863,7 @@ mod tests {
         let network1 = TcpNetwork::new(node1_id, config1).await.unwrap();
         let network2 = TcpNetwork::new(node2_id, config2).await.unwrap();
 
-        let addr1 = network1.local_addr();
+        let _addr1 = network1.local_addr();
         let addr2 = network2.local_addr();
 
         // Connect network1 to network2
