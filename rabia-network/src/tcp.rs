@@ -18,6 +18,7 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
+use tokio::io::{ReadHalf, WriteHalf};
 use tokio::sync::{mpsc, Mutex, RwLock};
 use tokio::time::{sleep, timeout};
 use tracing::{debug, error, info, warn};
@@ -133,7 +134,7 @@ impl MessageFrame {
     /// Serialize frame to bytes
     fn to_bytes(&self) -> Bytes {
         let mut buf = BytesMut::with_capacity(4 + self.payload.len());
-        buf.put_u32(self.length);
+        buf.put_u32_le(self.length);
         buf.put_slice(&self.payload);
         buf.freeze()
     }
@@ -145,7 +146,7 @@ impl MessageFrame {
     {
         // Read length field
         let length = reader
-            .read_u32()
+            .read_u32_le()
             .await
             .map_err(|e| RabiaError::network(format!("Failed to read frame length: {}", e)))?;
 
@@ -175,7 +176,8 @@ impl MessageFrame {
 struct ConnectionInfo {
     node_id: NodeId,
     addr: SocketAddr,
-    stream: Arc<Mutex<TcpStream>>,
+    reader: Arc<Mutex<ReadHalf<TcpStream>>>,
+    writer: Arc<Mutex<WriteHalf<TcpStream>>>,
     last_seen: Instant,
     outbound_queue: mpsc::UnboundedSender<ProtocolMessage>,
     is_outbound: bool,
@@ -336,10 +338,12 @@ impl TcpNetwork {
 
         // Create connection info
         let (outbound_tx, outbound_rx) = mpsc::unbounded_channel();
+        let (read_half, write_half) = tokio::io::split(stream);
         let connection_info = Arc::new(ConnectionInfo {
             node_id: peer_node_id,
             addr,
-            stream: Arc::new(Mutex::new(stream)),
+            reader: Arc::new(Mutex::new(read_half)),
+            writer: Arc::new(Mutex::new(write_half)),
             last_seen: Instant::now(),
             outbound_queue: outbound_tx,
             is_outbound: false,
@@ -356,7 +360,7 @@ impl TcpNetwork {
         }
 
         // Start connection handler
-        Self::run_connection_handler(connection_info, outbound_rx, message_tx, config).await;
+        tokio::spawn(Self::run_connection_handler(connection_info, outbound_rx, message_tx, config));
 
         Ok(())
     }
@@ -438,10 +442,12 @@ impl TcpNetwork {
 
                     // Create connection info
                     let (outbound_tx, outbound_rx) = mpsc::unbounded_channel();
+                    let (read_half, write_half) = tokio::io::split(stream);
                     let connection_info = Arc::new(ConnectionInfo {
                         node_id: peer_node_id,
                         addr,
-                        stream: Arc::new(Mutex::new(stream)),
+                        reader: Arc::new(Mutex::new(read_half)),
+                        writer: Arc::new(Mutex::new(write_half)),
                         last_seen: Instant::now(),
                         outbound_queue: outbound_tx,
                         is_outbound: true,
@@ -458,23 +464,15 @@ impl TcpNetwork {
                     }
 
                     // Start connection handler
-                    let connections = self.connections.clone();
                     let message_tx = self.message_tx.clone();
                     let config = self.config.clone();
 
-                    tokio::spawn(async move {
-                        Self::run_connection_handler(
-                            connection_info,
-                            outbound_rx,
-                            message_tx,
-                            config,
-                        )
-                        .await;
-
-                        // Clean up on disconnect
-                        let mut connections = connections.write().await;
-                        connections.remove(&peer_node_id);
-                    });
+                    tokio::spawn(Self::run_connection_handler(
+                        connection_info,
+                        outbound_rx,
+                        message_tx,
+                        config,
+                    ));
 
                     return Ok(());
                 }
@@ -553,8 +551,8 @@ impl TcpNetwork {
         info!("Starting connection handler for {}", node_id);
 
         // Create separate handles for reading and writing
-        let stream_read = connection.stream.clone();
-        let stream_write = connection.stream.clone();
+        let stream_read = connection.reader.clone();
+        let stream_write = connection.writer.clone();
 
         // Spawn reader task
         let message_tx_clone = message_tx.clone();
