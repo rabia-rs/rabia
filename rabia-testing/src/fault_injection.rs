@@ -43,7 +43,7 @@ pub enum FaultType {
     },
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub struct TestScenario {
     pub name: String,
     pub description: String,
@@ -54,7 +54,7 @@ pub struct TestScenario {
     pub timeout: Duration,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 pub enum ExpectedOutcome {
     AllCommitted,
     PartialCommitment { min_committed: usize },
@@ -65,14 +65,11 @@ pub enum ExpectedOutcome {
 pub struct ConsensusTestHarness {
     simulator: Arc<NetworkSimulator>,
     nodes: HashMap<NodeId, Arc<ConsensusNode>>,
-    #[allow(dead_code)]
     test_duration: Duration,
-    #[allow(dead_code)]
     start_time: Instant,
 }
 
 struct ConsensusNode {
-    #[allow(dead_code)]
     node_id: NodeId,
     engine_tx: EngineCommandSender,
     #[allow(dead_code)]
@@ -205,7 +202,7 @@ impl ConsensusTestHarness {
                 );
                 self.simulator.remove_node(node_id).await;
 
-                let _sim = self.simulator.clone();
+                let sim = self.simulator.clone();
                 tokio::spawn(async move {
                     sleep(duration).await;
                     // Note: In a real implementation, we'd need to restart the node
@@ -226,19 +223,15 @@ impl ConsensusTestHarness {
                     "Injecting packet loss rate {} (duration: {:?})",
                     rate, duration
                 );
-                let conditions = NetworkConditions {
-                    packet_loss_rate: rate,
-                    ..Default::default()
-                };
+                let mut conditions = NetworkConditions::default();
+                conditions.packet_loss_rate = rate;
                 self.simulator.update_conditions(conditions.clone()).await;
 
                 let sim = self.simulator.clone();
                 tokio::spawn(async move {
                     sleep(duration).await;
-                    let restore_conditions = NetworkConditions {
-                        packet_loss_rate: 0.0,
-                        ..Default::default()
-                    };
+                    let mut restore_conditions = NetworkConditions::default();
+                    restore_conditions.packet_loss_rate = 0.0;
                     sim.update_conditions(restore_conditions).await;
                 });
             }
@@ -250,11 +243,9 @@ impl ConsensusTestHarness {
                     max.as_millis(),
                     duration
                 );
-                let conditions = NetworkConditions {
-                    latency_min: min,
-                    latency_max: max,
-                    ..Default::default()
-                };
+                let mut conditions = NetworkConditions::default();
+                conditions.latency_min = min;
+                conditions.latency_max = max;
                 self.simulator.update_conditions(conditions.clone()).await;
 
                 let sim = self.simulator.clone();
@@ -299,9 +290,11 @@ impl ConsensusTestHarness {
                 .send(EngineCommand::GetStatistics(stats_tx))
                 .is_ok()
             {
-                if let Ok(Ok(stats)) = tokio::time::timeout(Duration::from_millis(100), stats_rx).await
+                if let Ok(stats) = tokio::time::timeout(Duration::from_millis(100), stats_rx).await
                 {
-                    node_stats.insert(node_id, stats);
+                    if let Ok(stats) = stats {
+                        node_stats.insert(node_id, stats);
+                    }
                 }
             }
         }

@@ -98,7 +98,7 @@ impl PerformanceBenchmark {
         Self {
             config,
             memory_pool: Arc::new(MemoryPool::new(PoolConfig::default())),
-            serializer: Arc::new(BinarySerializer),
+            serializer: Arc::new(BinarySerializer::default()),
         }
     }
 
@@ -220,14 +220,7 @@ impl PerformanceBenchmark {
 
     /// Benchmark command batch creation and processing
     async fn benchmark_command_batching(&self) -> BenchmarkResults {
-        let _batch_config = BatchConfig {
-            max_batch_size: self.config.batch_size,
-            max_batch_delay: Duration::from_millis(10),
-            buffer_capacity: 1000,
-            adaptive: false,
-        };
-
-        let _batch_processor = BatchProcessor::new();
+        let batch_processor = BatchProcessor::new();
         let value = "x".repeat(self.config.value_size);
 
         let start = Instant::now();
@@ -269,7 +262,7 @@ impl PerformanceBenchmark {
                 allocations.push(pooled);
             } else {
                 // Standard allocation for comparison
-                let _vec = vec![0u8; value_size];
+                let vec = vec![0u8; value_size];
                 let pooled = pool.get_buffer(value_size);
                 allocations.push(pooled);
             }
@@ -308,7 +301,7 @@ impl PerformanceBenchmark {
         } else {
             // JSON serialization for comparison
             for _ in 0..100 {
-                let _serialized = serde_json::to_vec(&batch).unwrap();
+                let _serialized = self.serializer.serialize(&batch).unwrap();
             }
         }
 

@@ -10,10 +10,9 @@ use tracing::{info, warn, Level};
 use tracing_subscriber::FmtSubscriber;
 
 use rabia_core::{
-    NodeId, 
-    messages::{ProtocolMessage, MessageType, HeartBeatMessage, ProposeMessage},
+    messages::{HeartBeatMessage, MessageType, ProposeMessage, ProtocolMessage},
     network::NetworkTransport,
-    PhaseId, BatchId, StateValue, CommandBatch, Command,
+    BatchId, Command, CommandBatch, NodeId, PhaseId, StateValue,
 };
 use rabia_network::{TcpNetwork, TcpNetworkConfig};
 
@@ -56,7 +55,7 @@ async fn run_two_node_cluster() -> Result<(), Box<dyn std::error::Error>> {
         peer_addresses: HashMap::new(),
         ..Default::default()
     };
-    
+
     let config2 = TcpNetworkConfig {
         bind_addr: "127.0.0.1:9002".parse()?,
         peer_addresses: HashMap::new(),
@@ -67,26 +66,36 @@ async fn run_two_node_cluster() -> Result<(), Box<dyn std::error::Error>> {
     let mut network1 = TcpNetwork::new(node1_id, config1).await?;
     let mut network2 = TcpNetwork::new(node2_id, config2).await?;
 
-    info!("Node 1: {} listening on {}", node1_id, network1.local_addr());
-    info!("Node 2: {} listening on {}", node2_id, network2.local_addr());
+    info!(
+        "Node 1: {} listening on {}",
+        node1_id,
+        network1.local_addr()
+    );
+    info!(
+        "Node 2: {} listening on {}",
+        node2_id,
+        network2.local_addr()
+    );
 
     // Connect the nodes
     info!("Connecting nodes...");
-    network1.connect_to_peer(node2_id, network2.local_addr()).await?;
-    
+    network1
+        .connect_to_peer(node2_id, network2.local_addr())
+        .await?;
+
     // Wait for connection to establish
     sleep(Duration::from_millis(200)).await;
 
     // Verify connectivity
     let connected1 = network1.get_connected_nodes().await?;
     let connected2 = network2.get_connected_nodes().await?;
-    
+
     info!("Node 1 connected to: {:?}", connected1);
     info!("Node 2 connected to: {:?}", connected2);
 
     // Exchange messages
     info!("Exchanging test messages...");
-    
+
     // Send heartbeat from node1 to node2
     let heartbeat = ProtocolMessage::new(
         node1_id,
@@ -95,17 +104,21 @@ async fn run_two_node_cluster() -> Result<(), Box<dyn std::error::Error>> {
             current_phase: PhaseId::new(1),
             last_committed_phase: PhaseId::new(0),
             active: true,
-        })
+        }),
     );
-    
+
     network1.send_to(node2_id, heartbeat).await?;
-    
+
     // Receive on node2
     match tokio::time::timeout(Duration::from_secs(3), network2.receive()).await {
         Ok(Ok((from, message))) => {
             info!("✅ Node 2 received message from {}", from);
             if let MessageType::HeartBeat(hb) = message.message_type {
-                info!("   Heartbeat: phase={}, active={}", hb.current_phase.value(), hb.active);
+                info!(
+                    "   Heartbeat: phase={}, active={}",
+                    hb.current_phase.value(),
+                    hb.active
+                );
             }
         }
         Ok(Err(e)) => warn!("❌ Error receiving message: {}", e),
@@ -119,7 +132,7 @@ async fn run_two_node_cluster() -> Result<(), Box<dyn std::error::Error>> {
         Command::new("GET user:alice"),
     ];
     let batch = CommandBatch::new(commands);
-    
+
     let proposal = ProtocolMessage::new(
         node2_id,
         Some(node1_id),
@@ -128,17 +141,21 @@ async fn run_two_node_cluster() -> Result<(), Box<dyn std::error::Error>> {
             batch_id: BatchId::new(),
             value: StateValue::V1,
             batch: Some(batch),
-        })
+        }),
     );
-    
+
     network2.send_to(node1_id, proposal).await?;
-    
+
     // Receive on node1
     match tokio::time::timeout(Duration::from_secs(3), network1.receive()).await {
         Ok(Ok((from, message))) => {
             info!("✅ Node 1 received proposal from {}", from);
             if let MessageType::Propose(prop) = message.message_type {
-                info!("   Proposal: phase={}, value={:?}", prop.phase_id.value(), prop.value);
+                info!(
+                    "   Proposal: phase={}, value={:?}",
+                    prop.phase_id.value(),
+                    prop.value
+                );
                 if let Some(batch) = prop.batch {
                     info!("   Commands: {} in batch", batch.commands.len());
                 }
@@ -151,7 +168,7 @@ async fn run_two_node_cluster() -> Result<(), Box<dyn std::error::Error>> {
     // Cleanup
     network1.shutdown().await;
     network2.shutdown().await;
-    
+
     info!("✅ Two-node cluster example completed\n");
     Ok(())
 }
@@ -161,7 +178,7 @@ async fn run_multi_node_cluster() -> Result<(), Box<dyn std::error::Error>> {
     const NODE_COUNT: usize = 5;
     let mut networks = Vec::new();
     let mut node_ids = Vec::new();
-    
+
     info!("Setting up {}-node TCP cluster...", NODE_COUNT);
 
     // Create all nodes
@@ -171,10 +188,15 @@ async fn run_multi_node_cluster() -> Result<(), Box<dyn std::error::Error>> {
             bind_addr: format!("127.0.0.1:{}", 9010 + i).parse()?,
             ..Default::default()
         };
-        
+
         let network = TcpNetwork::new(node_id, config).await?;
-        info!("Node {}: {} listening on {}", i + 1, node_id, network.local_addr());
-        
+        info!(
+            "Node {}: {} listening on {}",
+            i + 1,
+            node_id,
+            network.local_addr()
+        );
+
         node_ids.push(node_id);
         networks.push(network);
     }
@@ -186,7 +208,7 @@ async fn run_multi_node_cluster() -> Result<(), Box<dyn std::error::Error>> {
             if i != j {
                 let target_node = node_ids[j];
                 let target_addr = networks[j].local_addr();
-                
+
                 if let Err(e) = networks[i].connect_to_peer(target_node, target_addr).await {
                     warn!("Failed to connect node {} to {}: {}", i, j, e);
                 }
@@ -212,18 +234,17 @@ async fn run_multi_node_cluster() -> Result<(), Box<dyn std::error::Error>> {
             current_phase: PhaseId::new(42),
             last_committed_phase: PhaseId::new(41),
             active: true,
-        })
+        }),
     );
 
-    networks[0].broadcast(broadcast_message, Some(node_ids[0])).await?;
+    networks[0]
+        .broadcast(broadcast_message, Some(node_ids[0]))
+        .await?;
 
     // Receive broadcast on all other nodes
     let mut received_count = 0;
     for i in 1..networks.len() {
-        match tokio::time::timeout(
-            Duration::from_secs(5),
-            networks[i].receive()
-        ).await {
+        match tokio::time::timeout(Duration::from_secs(5), networks[i].receive()).await {
             Ok(Ok((from, message))) => {
                 received_count += 1;
                 info!("✅ Node {} received broadcast from {}", i + 1, from);
@@ -236,13 +257,17 @@ async fn run_multi_node_cluster() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
 
-    info!("📊 Broadcast results: {}/{} nodes received message", received_count, NODE_COUNT - 1);
+    info!(
+        "📊 Broadcast results: {}/{} nodes received message",
+        received_count,
+        NODE_COUNT - 1
+    );
 
     // Cleanup
     for network in networks {
         network.shutdown().await;
     }
-    
+
     info!("✅ Multi-node cluster example completed\n");
     Ok(())
 }
@@ -254,17 +279,22 @@ async fn run_dynamic_topology() -> Result<(), Box<dyn std::error::Error>> {
     // Start with 3 nodes
     let mut networks = Vec::new();
     let mut node_ids = Vec::new();
-    
+
     for i in 0..3 {
         let node_id = NodeId::new();
         let config = TcpNetworkConfig {
             bind_addr: format!("127.0.0.1:{}", 9020 + i).parse()?,
             ..Default::default()
         };
-        
+
         let network = TcpNetwork::new(node_id, config).await?;
-        info!("Initial node {}: {} on {}", i + 1, node_id, network.local_addr());
-        
+        info!(
+            "Initial node {}: {} on {}",
+            i + 1,
+            node_id,
+            network.local_addr()
+        );
+
         node_ids.push(node_id);
         networks.push(network);
     }
@@ -276,17 +306,24 @@ async fn run_dynamic_topology() -> Result<(), Box<dyn std::error::Error>> {
             if i != j {
                 let target_node = node_ids[j];
                 let target_addr = networks[j].local_addr();
-                networks[i].connect_to_peer(target_node, target_addr).await.ok();
+                networks[i]
+                    .connect_to_peer(target_node, target_addr)
+                    .await
+                    .ok();
             }
         }
     }
-    
+
     sleep(Duration::from_millis(300)).await;
 
     // Verify initial connectivity
     for (i, network) in networks.iter().enumerate() {
         let connected = network.get_connected_nodes().await?;
-        info!("Initial Node {} connected to {} peers", i + 1, connected.len());
+        info!(
+            "Initial Node {} connected to {} peers",
+            i + 1,
+            connected.len()
+        );
     }
 
     // Add a new node dynamically
@@ -296,7 +333,7 @@ async fn run_dynamic_topology() -> Result<(), Box<dyn std::error::Error>> {
         bind_addr: "127.0.0.1:9024".parse()?,
         ..Default::default()
     };
-    
+
     let mut new_network = TcpNetwork::new(new_node_id, new_config).await?;
     info!("New node: {} on {}", new_node_id, new_network.local_addr());
 
@@ -304,12 +341,18 @@ async fn run_dynamic_topology() -> Result<(), Box<dyn std::error::Error>> {
     for (i, existing_network) in networks.iter().enumerate() {
         let existing_node = node_ids[i];
         let existing_addr = existing_network.local_addr();
-        
+
         // New node connects to existing
-        new_network.connect_to_peer(existing_node, existing_addr).await.ok();
-        
+        new_network
+            .connect_to_peer(existing_node, existing_addr)
+            .await
+            .ok();
+
         // Existing node connects to new (bidirectional)
-        existing_network.connect_to_peer(new_node_id, new_network.local_addr()).await.ok();
+        existing_network
+            .connect_to_peer(new_node_id, new_network.local_addr())
+            .await
+            .ok();
     }
 
     sleep(Duration::from_millis(300)).await;
@@ -323,31 +366,33 @@ async fn run_dynamic_topology() -> Result<(), Box<dyn std::error::Error>> {
             current_phase: PhaseId::new(100),
             last_committed_phase: PhaseId::new(99),
             active: true,
-        })
+        }),
     );
 
-    new_network.broadcast(test_message, Some(new_node_id)).await?;
+    new_network
+        .broadcast(test_message, Some(new_node_id))
+        .await?;
 
     let mut received_by_original = 0;
     for i in 0..networks.len() {
-        match tokio::time::timeout(
-            Duration::from_secs(3),
-            networks[i].receive()
-        ).await {
+        match tokio::time::timeout(Duration::from_secs(3), networks[i].receive()).await {
             Ok(Ok((from, _))) => {
                 received_by_original += 1;
                 info!("✅ Original node {} received from new node {}", i + 1, from);
             }
-            _ => {},
+            _ => {}
         }
     }
 
-    info!("📊 New node successfully communicated with {}/3 original nodes", received_by_original);
+    info!(
+        "📊 New node successfully communicated with {}/3 original nodes",
+        received_by_original
+    );
 
     // Simulate node failure (shutdown node 1)
     info!("Simulating failure of Node 2...");
     networks[1].shutdown().await;
-    
+
     sleep(Duration::from_millis(200)).await;
 
     // Test remaining connectivity
@@ -359,19 +404,20 @@ async fn run_dynamic_topology() -> Result<(), Box<dyn std::error::Error>> {
             current_phase: PhaseId::new(200),
             last_committed_phase: PhaseId::new(199),
             active: false, // Indicating degraded state
-        })
+        }),
     );
 
-    networks[0].broadcast(recovery_message, Some(node_ids[0])).await?;
+    networks[0]
+        .broadcast(recovery_message, Some(node_ids[0]))
+        .await?;
 
     let mut received_after_failure = 0;
     // Try to receive on remaining nodes (skip the failed node)
     for i in [0, 2].iter() {
-        if *i == 0 { continue; } // Skip sender
-        match tokio::time::timeout(
-            Duration::from_secs(2),
-            networks[*i].receive()
-        ).await {
+        if *i == 0 {
+            continue;
+        } // Skip sender
+        match tokio::time::timeout(Duration::from_secs(2), networks[*i].receive()).await {
             Ok(Ok(_)) => {
                 received_after_failure += 1;
                 info!("✅ Node {} still receiving after failure", i + 1);
@@ -383,10 +429,7 @@ async fn run_dynamic_topology() -> Result<(), Box<dyn std::error::Error>> {
     }
 
     // Check new node connectivity
-    match tokio::time::timeout(
-        Duration::from_secs(2),
-        new_network.receive()
-    ).await {
+    match tokio::time::timeout(Duration::from_secs(2), new_network.receive()).await {
         Ok(Ok(_)) => {
             received_after_failure += 1;
             info!("✅ New node still receiving after failure");
@@ -396,14 +439,17 @@ async fn run_dynamic_topology() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
 
-    info!("📊 After failure: {}/2 remaining nodes still connected", received_after_failure);
+    info!(
+        "📊 After failure: {}/2 remaining nodes still connected",
+        received_after_failure
+    );
 
     // Cleanup
     for network in networks {
         network.shutdown().await;
     }
     new_network.shutdown().await;
-    
+
     info!("✅ Dynamic topology example completed\n");
     Ok(())
 }

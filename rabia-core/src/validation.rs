@@ -228,7 +228,7 @@ pub fn validate_message_sequence(previous_phase: PhaseId, current_phase: PhaseId
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::Command;
+    use crate::{messages::ProposeMessage, Command};
 
     #[test]
     fn test_batch_validation() {

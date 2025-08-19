@@ -1,5 +1,7 @@
 use criterion::{black_box, criterion_group, criterion_main, Criterion};
 use rabia_core::{messages::*, Command, CommandBatch, PhaseId};
+use serde_json;
+use std::time::Instant;
 
 fn benchmark_message_serialization(c: &mut Criterion) {
     let propose_msg = ProtocolMessage::new(
@@ -48,7 +50,7 @@ fn benchmark_command_batch_creation(c: &mut Criterion) {
 }
 
 fn benchmark_memory_allocations(c: &mut Criterion) {
-    c.bench_function("node_id_creation", |b| b.iter(rabia_core::NodeId::new));
+    c.bench_function("node_id_creation", |b| b.iter(|| rabia_core::NodeId::new()));
 
     c.bench_function("phase_id_creation", |b| {
         b.iter(|| PhaseId::new(black_box(12345)))
