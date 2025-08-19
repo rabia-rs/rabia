@@ -46,7 +46,6 @@ pub struct PerformanceBenchmark {
 }
 
 struct BenchmarkNode {
-    #[allow(dead_code)]
     node_id: NodeId,
     engine_tx: EngineCommandSender,
     #[allow(dead_code)]
@@ -57,7 +56,6 @@ struct BenchmarkNode {
 struct OperationResult {
     latency: Duration,
     success: bool,
-    #[allow(dead_code)]
     timestamp: Instant,
 }
 
@@ -94,12 +92,8 @@ impl PerformanceBenchmark {
             );
 
             let engine_handle = tokio::spawn(async move {
-                println!("Starting engine for node {}", node_id);
                 if let Err(e) = engine.run().await {
-                    println!("Engine for node {} failed: {}", node_id, e);
                     warn!("Engine for node {} failed: {}", node_id, e);
-                } else {
-                    println!("Engine for node {} completed normally", node_id);
                 }
             });
 
@@ -118,52 +112,7 @@ impl PerformanceBenchmark {
             sim_clone.run_simulation().await;
         });
 
-        let benchmark = Self { simulator, nodes };
-
-        // Wait for cluster to initialize properly
-        benchmark.wait_for_cluster_initialization().await;
-
-        benchmark
-    }
-
-    async fn wait_for_cluster_initialization(&self) {
-        info!("Waiting for cluster initialization...");
-
-        // Give engines significant time to start up and establish connections
-        sleep(Duration::from_secs(2)).await;
-
-        // Check if engines are still running by checking if we can send to them
-        let node_ids: Vec<NodeId> = self.nodes.keys().copied().collect();
-        println!("Checking {} nodes for responsiveness", node_ids.len());
-
-        for (i, node_id) in node_ids.iter().enumerate() {
-            if let Some(node) = self.nodes.get(node_id) {
-                // Just check if the channel is open, don't send actual commands yet
-                // The engine might not be ready to process commands but should accept them
-                let test_command = Command::new(b"ping".to_vec());
-                let batch = CommandBatch::new(vec![test_command]);
-                let (response_tx, _response_rx) = tokio::sync::oneshot::channel();
-
-                let cmd = EngineCommand::ProcessBatch(rabia_engine::CommandRequest {
-                    batch,
-                    response_tx,
-                });
-
-                match node.engine_tx.send(cmd) {
-                    Ok(_) => {
-                        println!("Node {} ({}) channel is open", i + 1, node_id);
-                    }
-                    Err(e) => {
-                        println!("Node {} ({}) channel closed: {:?}", i + 1, node_id, e);
-                    }
-                }
-            }
-        }
-
-        info!("Cluster initialization check completed");
-
-        // Additional stabilization time
-        sleep(Duration::from_millis(500)).await;
+        Self { simulator, nodes }
     }
 
     pub async fn run_performance_test(&self, test: PerformanceTest) -> PerformanceResult {
@@ -173,9 +122,6 @@ impl PerformanceBenchmark {
         self.simulator
             .update_conditions(test.network_conditions.clone())
             .await;
-
-        // Additional warm-up period for the test configuration
-        sleep(Duration::from_millis(100)).await;
 
         let start_time = Instant::now();
         let mut operation_results = Vec::new();
@@ -227,13 +173,8 @@ impl PerformanceBenchmark {
                                     timestamp: submit_time,
                                 });
                                 successful_operations += test.batch_size;
-                                println!(
-                                    "Batch {} successful, latency: {:?}",
-                                    operation_count / test.batch_size,
-                                    latency
-                                );
                             }
-                            Ok(Err(e)) => {
+                            Ok(Err(_)) | Err(_) => {
                                 let latency = submit_time.elapsed();
                                 operation_results.push(OperationResult {
                                     latency,
@@ -241,25 +182,6 @@ impl PerformanceBenchmark {
                                     timestamp: submit_time,
                                 });
                                 failed_operations += test.batch_size;
-                                println!(
-                                    "Batch {} failed with error: {:?}",
-                                    operation_count / test.batch_size,
-                                    e
-                                );
-                            }
-                            Err(_) => {
-                                let latency = submit_time.elapsed();
-                                operation_results.push(OperationResult {
-                                    latency,
-                                    success: false,
-                                    timestamp: submit_time,
-                                });
-                                failed_operations += test.batch_size;
-                                println!(
-                                    "Batch {} timed out after {:?}",
-                                    operation_count / test.batch_size,
-                                    latency
-                                );
                             }
                         }
                     } else {
@@ -529,83 +451,27 @@ mod tests {
         let config = RabiaConfig::default();
         let benchmark = PerformanceBenchmark::new(3, config).await;
 
-        // Debug: Let's check if engines are still alive after some time
-        println!("Waiting additional time to see if engines stay alive...");
-        sleep(Duration::from_secs(3)).await;
-
-        // Check engines again
-        let node_ids: Vec<NodeId> = benchmark.nodes.keys().copied().collect();
-        for (i, node_id) in node_ids.iter().enumerate() {
-            if let Some(node) = benchmark.nodes.get(node_id) {
-                let test_command = Command::new(b"ping".to_vec());
-                let batch = CommandBatch::new(vec![test_command]);
-                let (response_tx, _response_rx) = tokio::sync::oneshot::channel();
-
-                let cmd = EngineCommand::ProcessBatch(rabia_engine::CommandRequest {
-                    batch,
-                    response_tx,
-                });
-
-                match node.engine_tx.send(cmd) {
-                    Ok(_) => {
-                        println!(
-                            "Pre-test: Node {} ({}) channel is still open",
-                            i + 1,
-                            node_id
-                        );
-                    }
-                    Err(e) => {
-                        println!(
-                            "Pre-test: Node {} ({}) channel closed: {:?}",
-                            i + 1,
-                            node_id,
-                            e
-                        );
-                    }
-                }
-            }
-        }
-
         let test = PerformanceTest {
             name: "Test Baseline".to_string(),
             description: "Basic performance test".to_string(),
             node_count: 3,
-            total_operations: 10,
-            operations_per_second: 5,
-            batch_size: 2,
-            test_duration: Duration::from_secs(8),
+            total_operations: 50,
+            operations_per_second: 25,
+            batch_size: 5,
+            test_duration: Duration::from_secs(10),
             network_conditions: NetworkConditions::default(),
         };
 
         let result = timeout(
-            Duration::from_secs(20),
+            Duration::from_secs(15),
             benchmark.run_performance_test(test),
         )
         .await;
         assert!(result.is_ok());
 
         let result = result.unwrap();
-        println!("Test result: throughput_ops_per_sec = {}, successful_operations = {}, failed_operations = {}", 
-                 result.throughput_ops_per_sec, result.successful_operations, result.failed_operations);
-
-        // For now, let's make the test pass if we get any operations at all
-        // We'll make it more strict once we fix the underlying issue
-        if result.successful_operations > 0 {
-            assert!(
-                result.throughput_ops_per_sec > 0.0,
-                "Expected throughput > 0.0, got {}",
-                result.throughput_ops_per_sec
-            );
-            assert!(
-                result.successful_operations > 0,
-                "Expected successful_operations > 0, got {}",
-                result.successful_operations
-            );
-        } else {
-            // Temporarily pass the test if we have failures but processed operations
-            assert!(result.total_operations > 0, "No operations were attempted");
-            println!("Test passed with zero successful operations - this indicates an engine issue that needs investigation");
-        }
+        assert!(result.throughput_ops_per_sec > 0.0);
+        assert!(result.successful_operations > 0);
 
         benchmark.shutdown().await;
     }
@@ -619,13 +485,13 @@ mod tests {
             name: "Test Latency".to_string(),
             description: "Performance test with network latency".to_string(),
             node_count: 3,
-            total_operations: 8,
-            operations_per_second: 4,
+            total_operations: 20,
+            operations_per_second: 10,
             batch_size: 2,
-            test_duration: Duration::from_secs(6),
+            test_duration: Duration::from_secs(8),
             network_conditions: NetworkConditions {
-                latency_min: Duration::from_millis(10),
-                latency_max: Duration::from_millis(30),
+                latency_min: Duration::from_millis(20),
+                latency_max: Duration::from_millis(50),
                 packet_loss_rate: 0.0,
                 partition_probability: 0.0,
                 bandwidth_limit: None,
@@ -633,27 +499,15 @@ mod tests {
         };
 
         let result = timeout(
-            Duration::from_secs(20),
+            Duration::from_secs(15),
             benchmark.run_performance_test(test),
         )
         .await;
         assert!(result.is_ok());
 
         let result = result.unwrap();
-        println!("Latency test result: throughput_ops_per_sec = {}, successful_operations = {}, failed_operations = {}", 
-                 result.throughput_ops_per_sec, result.successful_operations, result.failed_operations);
         // With added latency, we expect some successful operations but lower throughput
-        // Temporarily make this more lenient while we debug the engine issues
-        if result.successful_operations > 0 {
-            assert!(
-                result.successful_operations > 0,
-                "Expected successful_operations > 0, got {}",
-                result.successful_operations
-            );
-        } else {
-            assert!(result.total_operations > 0, "No operations were attempted");
-            println!("Latency test passed with zero successful operations - this indicates an engine issue that needs investigation");
-        }
+        assert!(result.successful_operations > 0);
 
         benchmark.shutdown().await;
     }

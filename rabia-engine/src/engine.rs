@@ -27,7 +27,6 @@ where
 {
     node_id: NodeId,
     config: RabiaConfig,
-    #[allow(dead_code)]
     cluster_config: ClusterConfig,
     state_machine: Arc<tokio::sync::Mutex<SM>>,
     network: Arc<tokio::sync::Mutex<NT>>,
@@ -97,16 +96,8 @@ where
                 // Handle incoming commands
                 command_opt = self.command_rx.recv() => {
                     if let Some(command) = command_opt {
-                        match command {
-                            EngineCommand::Shutdown => {
-                                info!("Shutting down consensus engine");
-                                break Ok(());
-                            }
-                            _ => {
-                                if let Err(e) = self.handle_command(command).await {
-                                    error!("Error handling command: {}", e);
-                                }
-                            }
+                        if let Err(e) = self.handle_command(command).await {
+                            error!("Error handling command: {}", e);
                         }
                     } else {
                         // Channel closed, exit loop
@@ -166,9 +157,8 @@ where
         match command {
             EngineCommand::ProcessBatch(request) => self.process_batch_request(request).await,
             EngineCommand::Shutdown => {
-                // This should be handled in the main loop, but if it gets here, return Ok
-                info!("Shutdown command handled");
-                Ok(())
+                info!("Shutting down consensus engine");
+                return Err(RabiaError::internal("Shutdown requested"));
             }
             EngineCommand::ForcePhaseAdvance => self.advance_to_next_phase().await,
             EngineCommand::TriggerSync => self.initiate_sync().await,
@@ -219,7 +209,7 @@ where
         // Update phase with proposal
         self.engine_state.update_phase(phase_id, |phase| {
             phase.batch_id = Some(batch_id);
-            phase.proposed_value = Some(initial_value);
+            phase.proposed_value = Some(initial_value.clone());
             phase.batch = Some(batch.clone());
         })?;
 
@@ -329,7 +319,7 @@ where
                 if let Some(existing_value) = &existing_phase.proposed_value {
                     if *existing_value == propose.value {
                         // Same proposal - vote for it
-                        propose.value
+                        propose.value.clone()
                     } else {
                         // Conflicting proposal - vote ? (uncertain)
                         StateValue::VQuestion
@@ -425,7 +415,7 @@ where
 
         // Update our phase with round 2 vote
         self.engine_state.update_phase(phase_id, |phase| {
-            phase.add_round2_vote(self.node_id, round2_vote);
+            phase.add_round2_vote(self.node_id, round2_vote.clone());
         })?;
 
         // Broadcast round 2 vote
@@ -435,7 +425,7 @@ where
                 .engine_state
                 .get_phase(&phase_id)
                 .and_then(|p| p.batch_id)
-                .unwrap_or_default(),
+                .unwrap_or_else(BatchId::new),
             vote: round2_vote,
             voter_id: self.node_id,
             round1_votes,
@@ -468,30 +458,26 @@ where
             .filter(|&v| *v == StateValue::V1)
             .count();
 
-        match v1_count.cmp(&v0_count) {
-            std::cmp::Ordering::Greater => {
-                // More V1 votes in round 1 - prefer V1
-                if self.rng.gen_bool(0.8) {
-                    StateValue::V1
-                } else {
-                    StateValue::V0
-                }
+        if v1_count > v0_count {
+            // More V1 votes in round 1 - prefer V1
+            if self.rng.gen_bool(0.8) {
+                StateValue::V1
+            } else {
+                StateValue::V0
             }
-            std::cmp::Ordering::Less => {
-                // More V0 votes in round 1 - prefer V0
-                if self.rng.gen_bool(0.7) {
-                    StateValue::V0
-                } else {
-                    StateValue::V1
-                }
+        } else if v0_count > v1_count {
+            // More V0 votes in round 1 - prefer V0
+            if self.rng.gen_bool(0.7) {
+                StateValue::V0
+            } else {
+                StateValue::V1
             }
-            std::cmp::Ordering::Equal => {
-                // Tied or no clear preference - bias towards V1 for liveness
-                if self.rng.gen_bool(0.6) {
-                    StateValue::V1
-                } else {
-                    StateValue::V0
-                }
+        } else {
+            // Tied or no clear preference - bias towards V1 for liveness
+            if self.rng.gen_bool(0.6) {
+                StateValue::V1
+            } else {
+                StateValue::V0
             }
         }
     }
@@ -522,7 +508,7 @@ where
 
         // Update phase with decision
         self.engine_state.update_phase(phase_id, |phase| {
-            phase.set_decision(decision);
+            phase.set_decision(decision.clone());
         })?;
 
         // Apply the batch if decision is V1 (commit)
@@ -542,7 +528,7 @@ where
         let phase = self.engine_state.get_phase(&phase_id).unwrap();
         let decision_msg = DecisionMessage {
             phase_id,
-            batch_id: phase.batch_id.unwrap_or_default(),
+            batch_id: phase.batch_id.unwrap_or_else(BatchId::new),
             decision,
             batch: phase.batch,
         };
@@ -589,7 +575,7 @@ where
 
         // Update our phase data with the decision
         self.engine_state.update_phase(decision.phase_id, |phase| {
-            phase.set_decision(decision.decision);
+            phase.set_decision(decision.decision.clone());
             if phase.batch.is_none() {
                 phase.batch = decision.batch.clone();
             }

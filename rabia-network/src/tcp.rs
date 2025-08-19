@@ -9,7 +9,7 @@
 //! - Performance optimizations for high throughput
 
 use async_trait::async_trait;
-use bytes::{Bytes, BytesMut, BufMut};
+use bytes::{BufMut, Bytes, BytesMut};
 // use futures_util::SinkExt;
 use serde::{Deserialize, Serialize};
 use std::collections::{HashMap, HashSet};
@@ -18,14 +18,12 @@ use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::{TcpListener, TcpStream};
-use tokio::sync::{mpsc, RwLock, Mutex};
-use tokio::time::{timeout, sleep};
-use tracing::{debug, info, warn, error};
+use tokio::sync::{mpsc, Mutex, RwLock};
+use tokio::time::{sleep, timeout};
+use tracing::{debug, error, info, warn};
 
 use rabia_core::{
-    NodeId, Result, RabiaError,
-    messages::ProtocolMessage,
-    network::NetworkTransport,
+    messages::ProtocolMessage, network::NetworkTransport, NodeId, RabiaError, Result,
 };
 
 /// Configuration for TCP networking
@@ -121,10 +119,11 @@ impl MessageFrame {
     fn new(payload: Bytes) -> Result<Self> {
         if payload.len() > Self::MAX_FRAME_SIZE - 4 {
             return Err(RabiaError::network(format!(
-                "Message too large: {} bytes", payload.len()
+                "Message too large: {} bytes",
+                payload.len()
             )));
         }
-        
+
         Ok(Self {
             length: payload.len() as u32,
             payload,
@@ -140,23 +139,28 @@ impl MessageFrame {
     }
 
     /// Deserialize frame from bytes
-    async fn from_stream<R>(reader: &mut R) -> Result<Self> 
-    where 
+    async fn from_stream<R>(reader: &mut R) -> Result<Self>
+    where
         R: AsyncReadExt + Unpin,
     {
         // Read length field
-        let length = reader.read_u32().await
+        let length = reader
+            .read_u32()
+            .await
             .map_err(|e| RabiaError::network(format!("Failed to read frame length: {}", e)))?;
-        
+
         if length as usize > Self::MAX_FRAME_SIZE - 4 {
             return Err(RabiaError::network(format!(
-                "Frame too large: {} bytes", length
+                "Frame too large: {} bytes",
+                length
             )));
         }
 
         // Read payload
         let mut payload = vec![0u8; length as usize];
-        reader.read_exact(&mut payload).await
+        reader
+            .read_exact(&mut payload)
+            .await
             .map_err(|e| RabiaError::network(format!("Failed to read frame payload: {}", e)))?;
 
         Ok(Self {
@@ -217,23 +221,33 @@ impl TcpNetwork {
 
         // Start TCP listener
         network.start_listener().await?;
-        
+
         // Start connection manager
         network.start_connection_manager().await;
-        
-        info!("TCP network started for node {} on {}", node_id, network.config.bind_addr);
-        
+
+        info!(
+            "TCP network started for node {} on {}",
+            node_id, network.config.bind_addr
+        );
+
         Ok(network)
     }
 
     /// Start TCP listener for incoming connections
     async fn start_listener(&mut self) -> Result<()> {
-        let listener = TcpListener::bind(&self.config.bind_addr).await
-            .map_err(|e| RabiaError::network(format!("Failed to bind to {}: {}", self.config.bind_addr, e)))?;
+        let listener = TcpListener::bind(&self.config.bind_addr)
+            .await
+            .map_err(|e| {
+                RabiaError::network(format!(
+                    "Failed to bind to {}: {}",
+                    self.config.bind_addr, e
+                ))
+            })?;
 
-        let actual_addr = listener.local_addr()
+        let actual_addr = listener
+            .local_addr()
             .map_err(|e| RabiaError::network(format!("Failed to get local address: {}", e)))?;
-        
+
         info!("TCP listener bound to {}", actual_addr);
         self.config.bind_addr = actual_addr;
 
@@ -245,7 +259,15 @@ impl TcpNetwork {
         let config = self.config.clone();
 
         tokio::spawn(async move {
-            Self::accept_connections(listener, node_id, config, connections, addr_to_node, message_tx).await;
+            Self::accept_connections(
+                listener,
+                node_id,
+                config,
+                connections,
+                addr_to_node,
+                message_tx,
+            )
+            .await;
         });
 
         Ok(())
@@ -264,16 +286,24 @@ impl TcpNetwork {
             match listener.accept().await {
                 Ok((stream, addr)) => {
                     debug!("Accepted connection from {}", addr);
-                    
+
                     let connections = connections.clone();
                     let addr_to_node = addr_to_node.clone();
                     let message_tx = message_tx.clone();
                     let config = config.clone();
-                    
+
                     tokio::spawn(async move {
                         if let Err(e) = Self::handle_inbound_connection(
-                            stream, addr, node_id, config, connections, addr_to_node, message_tx
-                        ).await {
+                            stream,
+                            addr,
+                            node_id,
+                            config,
+                            connections,
+                            addr_to_node,
+                            message_tx,
+                        )
+                        .await
+                        {
                             warn!("Failed to handle inbound connection from {}: {}", addr, e);
                         }
                     });
@@ -298,8 +328,11 @@ impl TcpNetwork {
     ) -> Result<()> {
         // Perform handshake to identify the peer
         let peer_node_id = Self::perform_inbound_handshake(&mut stream, local_node_id).await?;
-        
-        info!("Established inbound connection from {} ({})", peer_node_id, addr);
+
+        info!(
+            "Established inbound connection from {} ({})",
+            peer_node_id, addr
+        );
 
         // Create connection info
         let (outbound_tx, outbound_rx) = mpsc::unbounded_channel();
@@ -324,29 +357,37 @@ impl TcpNetwork {
 
         // Start connection handler
         Self::run_connection_handler(connection_info, outbound_rx, message_tx, config).await;
-        
+
         Ok(())
     }
 
     /// Perform handshake for inbound connection
-    async fn perform_inbound_handshake(stream: &mut TcpStream, local_node_id: NodeId) -> Result<NodeId> {
+    async fn perform_inbound_handshake(
+        stream: &mut TcpStream,
+        local_node_id: NodeId,
+    ) -> Result<NodeId> {
         // Simple handshake protocol:
         // 1. Peer sends their node ID
         // 2. We send our node ID back
         // 3. Connection is established
-        
+
         // Read peer's node ID
         let frame = MessageFrame::from_stream(stream).await?;
-        let peer_node_id: NodeId = bincode::deserialize(&frame.payload)
-            .map_err(|e| RabiaError::network(format!("Failed to deserialize peer node ID: {}", e)))?;
+        let peer_node_id: NodeId = bincode::deserialize(&frame.payload).map_err(|e| {
+            RabiaError::network(format!("Failed to deserialize peer node ID: {}", e))
+        })?;
 
         // Send our node ID
         let our_id_bytes = bincode::serialize(&local_node_id)
             .map_err(|e| RabiaError::network(format!("Failed to serialize node ID: {}", e)))?;
         let response_frame = MessageFrame::new(Bytes::from(our_id_bytes))?;
-        
-        stream.write_all(&response_frame.to_bytes()).await
-            .map_err(|e| RabiaError::network(format!("Failed to send handshake response: {}", e)))?;
+
+        stream
+            .write_all(&response_frame.to_bytes())
+            .await
+            .map_err(|e| {
+                RabiaError::network(format!("Failed to send handshake response: {}", e))
+            })?;
 
         Ok(peer_node_id)
     }
@@ -372,18 +413,28 @@ impl TcpNetwork {
             match timeout(self.config.connection_timeout, TcpStream::connect(&addr)).await {
                 Ok(Ok(mut stream)) => {
                     // Perform outbound handshake
-                    if let Err(e) = self.perform_outbound_handshake(&mut stream, peer_node_id).await {
+                    if let Err(e) = self
+                        .perform_outbound_handshake(&mut stream, peer_node_id)
+                        .await
+                    {
                         warn!("Handshake failed with {}: {}", peer_node_id, e);
                         attempts += 1;
                         sleep(delay).await;
                         delay = Duration::min(
-                            Duration::from_millis((delay.as_millis() as f64 * self.config.retry_config.backoff_multiplier) as u64),
-                            self.config.retry_config.max_delay
+                            Duration::from_millis(
+                                (delay.as_millis() as f64
+                                    * self.config.retry_config.backoff_multiplier)
+                                    as u64,
+                            ),
+                            self.config.retry_config.max_delay,
                         );
                         continue;
                     }
 
-                    info!("Successfully connected to peer {} at {}", peer_node_id, addr);
+                    info!(
+                        "Successfully connected to peer {} at {}",
+                        peer_node_id, addr
+                    );
 
                     // Create connection info
                     let (outbound_tx, outbound_rx) = mpsc::unbounded_channel();
@@ -410,10 +461,16 @@ impl TcpNetwork {
                     let connections = self.connections.clone();
                     let message_tx = self.message_tx.clone();
                     let config = self.config.clone();
-                    
+
                     tokio::spawn(async move {
-                        Self::run_connection_handler(connection_info, outbound_rx, message_tx, config).await;
-                        
+                        Self::run_connection_handler(
+                            connection_info,
+                            outbound_rx,
+                            message_tx,
+                            config,
+                        )
+                        .await;
+
                         // Clean up on disconnect
                         let mut connections = connections.write().await;
                         connections.remove(&peer_node_id);
@@ -422,7 +479,12 @@ impl TcpNetwork {
                     return Ok(());
                 }
                 Ok(Err(e)) => {
-                    warn!("Connection attempt {} to {} failed: {}", attempts + 1, addr, e);
+                    warn!(
+                        "Connection attempt {} to {} failed: {}",
+                        attempts + 1,
+                        addr,
+                        e
+                    );
                 }
                 Err(_) => {
                     warn!("Connection attempt {} to {} timed out", attempts + 1, addr);
@@ -433,35 +495,47 @@ impl TcpNetwork {
             if attempts < self.config.retry_config.max_attempts {
                 sleep(delay).await;
                 delay = Duration::min(
-                    Duration::from_millis((delay.as_millis() as f64 * self.config.retry_config.backoff_multiplier) as u64),
-                    self.config.retry_config.max_delay
+                    Duration::from_millis(
+                        (delay.as_millis() as f64 * self.config.retry_config.backoff_multiplier)
+                            as u64,
+                    ),
+                    self.config.retry_config.max_delay,
                 );
             }
         }
 
         Err(RabiaError::network(format!(
-            "Failed to connect to {} after {} attempts", addr, attempts
+            "Failed to connect to {} after {} attempts",
+            addr, attempts
         )))
     }
 
     /// Perform handshake for outbound connection
-    async fn perform_outbound_handshake(&self, stream: &mut TcpStream, expected_peer_id: NodeId) -> Result<()> {
+    async fn perform_outbound_handshake(
+        &self,
+        stream: &mut TcpStream,
+        expected_peer_id: NodeId,
+    ) -> Result<()> {
         // Send our node ID
         let our_id_bytes = bincode::serialize(&self.node_id)
             .map_err(|e| RabiaError::network(format!("Failed to serialize node ID: {}", e)))?;
         let handshake_frame = MessageFrame::new(Bytes::from(our_id_bytes))?;
-        
-        stream.write_all(&handshake_frame.to_bytes()).await
+
+        stream
+            .write_all(&handshake_frame.to_bytes())
+            .await
             .map_err(|e| RabiaError::network(format!("Failed to send handshake: {}", e)))?;
 
         // Read peer's response
         let frame = MessageFrame::from_stream(stream).await?;
-        let peer_node_id: NodeId = bincode::deserialize(&frame.payload)
-            .map_err(|e| RabiaError::network(format!("Failed to deserialize peer response: {}", e)))?;
+        let peer_node_id: NodeId = bincode::deserialize(&frame.payload).map_err(|e| {
+            RabiaError::network(format!("Failed to deserialize peer response: {}", e))
+        })?;
 
         if peer_node_id != expected_peer_id {
             return Err(RabiaError::network(format!(
-                "Node ID mismatch: expected {}, got {}", expected_peer_id, peer_node_id
+                "Node ID mismatch: expected {}, got {}",
+                expected_peer_id, peer_node_id
             )));
         }
 
@@ -490,21 +564,19 @@ impl TcpNetwork {
                     let mut stream_guard = stream_read.lock().await;
                     MessageFrame::from_stream(&mut *stream_guard).await
                 };
-                
+
                 match frame_result {
-                    Ok(frame) => {
-                        match bincode::deserialize::<ProtocolMessage>(&frame.payload) {
-                            Ok(message) => {
-                                if let Err(e) = message_tx_clone.send((node_id, message)) {
-                                    debug!("Failed to send message to queue: {}", e);
-                                    break;
-                                }
-                            }
-                            Err(e) => {
-                                warn!("Failed to deserialize message from {}: {}", node_id, e);
+                    Ok(frame) => match bincode::deserialize::<ProtocolMessage>(&frame.payload) {
+                        Ok(message) => {
+                            if let Err(e) = message_tx_clone.send((node_id, message)) {
+                                debug!("Failed to send message to queue: {}", e);
+                                break;
                             }
                         }
-                    }
+                        Err(e) => {
+                            warn!("Failed to deserialize message from {}: {}", node_id, e);
+                        }
+                    },
                     Err(e) => {
                         debug!("Connection to {} closed: {}", node_id, e);
                         break;
@@ -530,7 +602,7 @@ impl TcpNetwork {
                             let mut stream_guard = stream_write.lock().await;
                             stream_guard.write_all(&frame.to_bytes()).await
                         };
-                        
+
                         if let Err(e) = write_result {
                             debug!("Failed to write to {}: {}", node_id, e);
                             break;
@@ -560,7 +632,7 @@ impl TcpNetwork {
     async fn start_connection_manager(&self) {
         let peer_addresses = self.config.peer_addresses.clone();
         let connections = self.connections.clone();
-        
+
         // Connect to known peers
         for (peer_id, addr) in peer_addresses {
             let network = self.clone();
@@ -574,19 +646,22 @@ impl TcpNetwork {
         // Start periodic connection health checks
         let connections_clone = connections.clone();
         let keepalive_interval = self.config.keepalive_interval;
-        
+
         tokio::spawn(async move {
             let mut interval = tokio::time::interval(keepalive_interval);
             loop {
                 interval.tick().await;
-                
+
                 let connections = connections_clone.read().await;
                 let now = Instant::now();
-                
+
                 for (node_id, connection) in connections.iter() {
                     let elapsed = now.duration_since(connection.last_seen);
                     if elapsed > keepalive_interval * 2 {
-                        warn!("Connection to {} appears stale (last seen {:?} ago)", node_id, elapsed);
+                        warn!(
+                            "Connection to {} appears stale (last seen {:?} ago)",
+                            node_id, elapsed
+                        );
                         // TODO: Implement connection health check or reconnection
                     }
                 }
@@ -599,20 +674,28 @@ impl TcpNetwork {
         self.config.bind_addr
     }
 
+    /// Get this node's ID
+    pub fn node_id(&self) -> NodeId {
+        self.node_id
+    }
+
     /// Add a known peer address for automatic connection
     pub async fn add_peer(&mut self, node_id: NodeId, addr: SocketAddr) {
         self.config.peer_addresses.insert(node_id, addr);
-        
+
         // Attempt immediate connection
         if let Err(e) = self.connect_to_peer(node_id, addr).await {
-            warn!("Failed to connect to newly added peer {} at {}: {}", node_id, addr, e);
+            warn!(
+                "Failed to connect to newly added peer {} at {}: {}",
+                node_id, addr, e
+            );
         }
     }
 
     /// Remove a peer
     pub async fn remove_peer(&mut self, node_id: NodeId) {
         self.config.peer_addresses.remove(&node_id);
-        
+
         // Close existing connection
         let mut connections = self.connections.write().await;
         if let Some(_connection) = connections.remove(&node_id) {
@@ -624,7 +707,7 @@ impl TcpNetwork {
     /// Shutdown the network
     pub async fn shutdown(&self) {
         info!("Shutting down TCP network");
-        
+
         if let Some(shutdown_tx) = self.shutdown_tx.lock().await.as_ref() {
             let _ = shutdown_tx.send(()).await;
         }
@@ -657,13 +740,17 @@ impl Clone for TcpNetwork {
 impl NetworkTransport for TcpNetwork {
     async fn send_to(&self, target: NodeId, message: ProtocolMessage) -> Result<()> {
         let connections = self.connections.read().await;
-        
+
         if let Some(connection) = connections.get(&target) {
-            connection.outbound_queue.send(message)
-                .map_err(|_| RabiaError::network(format!("Failed to queue message to {}", target)))?;
+            connection.outbound_queue.send(message).map_err(|_| {
+                RabiaError::network(format!("Failed to queue message to {}", target))
+            })?;
             Ok(())
         } else {
-            Err(RabiaError::network(format!("No connection to node {}", target)))
+            Err(RabiaError::network(format!(
+                "No connection to node {}",
+                target
+            )))
         }
     }
 
@@ -688,7 +775,7 @@ impl NetworkTransport for TcpNetwork {
 
     async fn receive(&mut self) -> Result<(NodeId, ProtocolMessage)> {
         let mut rx = self.message_rx.lock().await;
-        
+
         match rx.recv().await {
             Some((from, message)) => Ok((from, message)),
             None => Err(RabiaError::network("Message channel closed")),
@@ -713,13 +800,13 @@ impl NetworkTransport for TcpNetwork {
     async fn reconnect(&mut self) -> Result<()> {
         // Attempt to reconnect to all known peers
         let peer_addresses = self.config.peer_addresses.clone();
-        
+
         for (peer_id, addr) in peer_addresses {
             if let Err(e) = self.connect_to_peer(peer_id, addr).await {
                 warn!("Failed to reconnect to peer {} at {}: {}", peer_id, addr, e);
             }
         }
-        
+
         Ok(())
     }
 }
@@ -727,14 +814,14 @@ impl NetworkTransport for TcpNetwork {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use tokio::time::sleep;
     use std::time::Duration;
+    use tokio::time::sleep;
 
     #[tokio::test]
     async fn test_tcp_network_creation() {
         let node_id = NodeId::new();
         let config = TcpNetworkConfig::default();
-        
+
         let network = TcpNetwork::new(node_id, config).await.unwrap();
         assert_eq!(network.node_id, node_id);
         assert!(network.local_addr().port() > 0);
@@ -744,10 +831,10 @@ mod tests {
     async fn test_message_frame() {
         let payload = Bytes::from("test message");
         let frame = MessageFrame::new(payload.clone()).unwrap();
-        
+
         assert_eq!(frame.length, payload.len() as u32);
         assert_eq!(frame.payload, payload);
-        
+
         let serialized = frame.to_bytes();
         assert!(serialized.len() == 4 + payload.len());
     }
@@ -756,7 +843,7 @@ mod tests {
     async fn test_peer_connection() {
         let node1_id = NodeId::new();
         let node2_id = NodeId::new();
-        
+
         let config1 = TcpNetworkConfig {
             bind_addr: "127.0.0.1:0".parse().unwrap(),
             ..Default::default()
@@ -765,23 +852,23 @@ mod tests {
             bind_addr: "127.0.0.1:0".parse().unwrap(),
             ..Default::default()
         };
-        
+
         let network1 = TcpNetwork::new(node1_id, config1).await.unwrap();
         let network2 = TcpNetwork::new(node2_id, config2).await.unwrap();
-        
+
         let addr1 = network1.local_addr();
         let addr2 = network2.local_addr();
-        
+
         // Connect network1 to network2
         network1.connect_to_peer(node2_id, addr2).await.unwrap();
-        
+
         // Give some time for connection to establish
         sleep(Duration::from_millis(100)).await;
-        
+
         // Check connections
         assert!(network1.is_connected(node2_id).await.unwrap());
         assert!(network2.is_connected(node1_id).await.unwrap());
-        
+
         // Cleanup
         network1.shutdown().await;
         network2.shutdown().await;
