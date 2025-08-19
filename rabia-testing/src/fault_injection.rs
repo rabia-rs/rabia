@@ -43,7 +43,7 @@ pub enum FaultType {
     },
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct TestScenario {
     pub name: String,
     pub description: String,
@@ -54,7 +54,7 @@ pub struct TestScenario {
     pub timeout: Duration,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum ExpectedOutcome {
     AllCommitted,
     PartialCommitment { min_committed: usize },

@@ -773,7 +773,6 @@ dependencies = [
  "rabia-leader",
  "rabia-network",
  "rabia-persistence",
- "serde_json",
  "tokio",
  "tracing",
  "tracing-subscriber",

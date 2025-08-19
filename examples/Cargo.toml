@@ -28,10 +28,6 @@ path = "tcp_networking.rs"
 name = "leader_usage"
 path = "leader_usage.rs"
 
-[[bin]]
-name = "tcp_networking"
-path = "tcp_networking.rs"
-
 [dependencies]
 rabia-core = { path = "../rabia-core", version = "0.2.1" }
 rabia-engine = { path = "../rabia-engine", version = "0.2.1" }
@@ -42,4 +38,3 @@ rabia-leader = { path = "../rabia-leader", version = "0.2.1" }
 tokio = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
-serde_json = { workspace = true }

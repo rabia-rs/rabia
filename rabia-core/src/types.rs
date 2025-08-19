@@ -20,7 +20,7 @@ use uuid::Uuid;
 /// let node_id = NodeId::new();
 /// println!("Node ID: {}", node_id);
 /// ```
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub struct NodeId(pub Uuid);
 
 impl NodeId {
@@ -45,9 +45,103 @@ impl Default for NodeId {
     }
 }
 
+impl From<u32> for NodeId {
+    /// Creates a NodeId from a u32 for testing and examples.
+    /// 
+    /// This creates a deterministic UUID based on the input number,
+    /// which is useful for testing and examples where predictable
+    /// node IDs are needed.
+    fn from(value: u32) -> Self {
+        // Create a deterministic UUID from the u32 value
+        // Use the value in the first 4 bytes and repeat the pattern
+        let bytes = [
+            (value >> 24) as u8,
+            (value >> 16) as u8,
+            (value >> 8) as u8,
+            value as u8,
+            (value >> 24) as u8,
+            (value >> 16) as u8,
+            (value >> 8) as u8,
+            value as u8,
+            (value >> 24) as u8,
+            (value >> 16) as u8,
+            (value >> 8) as u8,
+            value as u8,
+            (value >> 24) as u8,
+            (value >> 16) as u8,
+            (value >> 8) as u8,
+            value as u8,
+        ];
+        Self(Uuid::from_bytes(bytes))
+    }
+}
+
+impl From<u64> for NodeId {
+    /// Creates a NodeId from a u64 for testing and examples.
+    /// 
+    /// This creates a deterministic UUID based on the input number,
+    /// which is useful for testing and examples where predictable
+    /// node IDs are needed.
+    fn from(value: u64) -> Self {
+        // Create a deterministic UUID from the u64 value
+        // Use the value in the first 8 bytes and repeat the pattern
+        let bytes = [
+            (value >> 56) as u8,
+            (value >> 48) as u8,
+            (value >> 40) as u8,
+            (value >> 32) as u8,
+            (value >> 24) as u8,
+            (value >> 16) as u8,
+            (value >> 8) as u8,
+            value as u8,
+            (value >> 56) as u8,
+            (value >> 48) as u8,
+            (value >> 40) as u8,
+            (value >> 32) as u8,
+            (value >> 24) as u8,
+            (value >> 16) as u8,
+            (value >> 8) as u8,
+            value as u8,
+        ];
+        Self(Uuid::from_bytes(bytes))
+    }
+}
+
+impl From<i32> for NodeId {
+    /// Creates a NodeId from an i32 for testing and examples.
+    /// 
+    /// This creates a deterministic UUID based on the input number,
+    /// which is useful for testing and examples where predictable
+    /// node IDs are needed.
+    fn from(value: i32) -> Self {
+        Self::from(value as u32)
+    }
+}
+
 impl fmt::Display for NodeId {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.0)
+    }
+}
+
+/// State of a node's participation in consensus.
+///
+/// Tracks whether a node is actively participating in the consensus protocol
+/// or is currently idle/inactive.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum ConsensusState {
+    /// Node is actively participating in consensus
+    Active,
+    /// Node is not currently participating in consensus
+    Idle,
+}
+
+impl fmt::Display for ConsensusState {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            ConsensusState::Active => write!(f, "Active"),
+            ConsensusState::Idle => write!(f, "Idle"),
+        }
     }
 }
 

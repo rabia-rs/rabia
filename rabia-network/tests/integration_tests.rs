@@ -180,7 +180,7 @@ async fn test_tcp_cluster_formation() {
     let mut addresses = HashMap::new();
 
     // Create nodes and start networks
-    for i in 0..NUM_NODES {
+    for _i in 0..NUM_NODES {
         let node_id = NodeId::new();
         let config = TcpNetworkConfig {
             bind_addr: "127.0.0.1:0".parse().unwrap(),
@@ -312,7 +312,7 @@ async fn test_tcp_fault_tolerance() {
     };
 
     let mut network1 = TcpNetwork::new(node1_id, config1).await.unwrap();
-    let mut network2 = TcpNetwork::new(node2_id, config2).await.unwrap();
+    let network2 = TcpNetwork::new(node2_id, config2).await.unwrap();
     let mut network3 = TcpNetwork::new(node3_id, config3).await.unwrap();
 
     let addr1 = network1.local_addr();
@@ -412,7 +412,7 @@ async fn test_tcp_high_volume() {
         ..Default::default()
     };
 
-    let mut network1 = TcpNetwork::new(node1_id, config1).await.unwrap();
+    let network1 = TcpNetwork::new(node1_id, config1).await.unwrap();
     let mut network2 = TcpNetwork::new(node2_id, config2).await.unwrap();
 
     let addr2 = network2.local_addr();
@@ -500,7 +500,7 @@ async fn test_tcp_concurrent_operations() {
         ..Default::default()
     };
 
-    let mut network1 = TcpNetwork::new(node1_id, config1).await.unwrap();
+    let network1 = TcpNetwork::new(node1_id, config1).await.unwrap();
     let mut network2 = TcpNetwork::new(node2_id, config2).await.unwrap();
 
     let addr1 = network1.local_addr();
