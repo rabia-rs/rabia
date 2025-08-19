@@ -116,7 +116,7 @@ jobs:
 
     - name: Generate code coverage
       run: |
-        export CI=true
+        echo "CI=true" >> $GITHUB_ENV
         cargo llvm-cov --all-features --workspace --lcov --output-path lcov.info || echo "Coverage generation failed, continuing..."
 
     - name: Upload coverage to Codecov
@@ -141,7 +141,7 @@ jobs:
 
     - name: Run benchmarks
       run: |
-        export CI=true
+        echo "CI=true" >> $GITHUB_ENV
         # Only run available benchmarks, skip disabled ones
         echo "Running available benchmarks in CI mode..."
         
@@ -211,13 +211,13 @@ jobs:
 
     - name: Run KVStore example
       run: |
-        export CI=true
+        echo "CI=true" >> $GITHUB_ENV
         echo "Running KVStore example with CI-friendly timeout..."
         timeout 60s cargo run --example kvstore_usage || echo "KVStore example completed/timed out (expected in CI)"
 
     - name: Check example compilation
       run: |
-        export CI=true
+        echo "CI=true" >> $GITHUB_ENV
         echo "Checking example compilation..."
         cargo check --package rabia-examples --bin basic_usage || echo "basic_usage check failed"
         cargo check --package rabia-examples --bin kvstore_usage || echo "kvstore_usage check failed"
@@ -242,7 +242,7 @@ jobs:
     - name: Run integration tests
       run: |
         # Set CI environment variable for test adaptations
-        export CI=true
+        echo "CI=true" >> $GITHUB_ENV
         cargo test --test '*' --all-features
 
   release-check:
