@@ -131,8 +131,9 @@ impl PerformanceBenchmark {
         let mut failed_operations = 0;
 
         // Calculate timing
+        const NANOS_PER_SECOND: u64 = 1_000_000_000;
         let operations_interval =
-            Duration::from_nanos((1_000_000_000 / test.operations_per_second as u64).max(1));
+            Duration::from_nanos((NANOS_PER_SECOND / test.operations_per_second as u64).max(1));
 
         let mut operation_count = 0;
         let node_ids: Vec<NodeId> = self.nodes.keys().copied().collect();
@@ -166,7 +167,13 @@ impl PerformanceBenchmark {
 
                     if node.engine_tx.send(cmd).is_ok() {
                         // Wait for response with timeout
-                        match tokio::time::timeout(Duration::from_secs(5), response_rx).await {
+                        const OPERATION_TIMEOUT_SECS: u64 = 5;
+                        match tokio::time::timeout(
+                            Duration::from_secs(OPERATION_TIMEOUT_SECS),
+                            response_rx,
+                        )
+                        .await
+                        {
                             Ok(Ok(_results)) => {
                                 let latency = submit_time.elapsed();
                                 operation_results.push(OperationResult {
@@ -269,10 +276,10 @@ impl PerformanceBenchmark {
     async fn estimate_memory_usage(&self) -> f64 {
         // Rough estimation of memory usage
         // In a real implementation, we'd use system metrics
-        let base_memory_per_node = 10.0; // MB
-        let network_memory = 5.0; // MB for network simulation
+        const BASE_MEMORY_PER_NODE_MB: f64 = 10.0;
+        const NETWORK_SIMULATION_MEMORY_MB: f64 = 5.0;
 
-        (self.nodes.len() as f64 * base_memory_per_node) + network_memory
+        (self.nodes.len() as f64 * BASE_MEMORY_PER_NODE_MB) + NETWORK_SIMULATION_MEMORY_MB
     }
 
     pub async fn shutdown(&self) {

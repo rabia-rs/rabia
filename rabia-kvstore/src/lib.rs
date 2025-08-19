@@ -15,7 +15,7 @@
 pub mod notifications;
 pub mod operations;
 pub mod store;
-// TODO: Implement these modules as separate components
+// Future enhancement: implement leader and topology modules as separate components
 // pub mod leader;
 // pub mod topology;
 

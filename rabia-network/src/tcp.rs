@@ -668,7 +668,7 @@ impl TcpNetwork {
                             "Connection to {} appears stale (last seen {:?} ago)",
                             node_id, elapsed
                         );
-                        // TODO: Implement connection health check or reconnection
+                        // Future enhancement: implement connection health check and reconnection logic
                     }
                 }
             }

@@ -530,7 +530,12 @@ where
         }
 
         // Broadcast decision
-        let phase = self.engine_state.get_phase(&phase_id).unwrap();
+        let phase = self.engine_state.get_phase(&phase_id).ok_or_else(|| {
+            RabiaError::internal(format!(
+                "Phase {} not found for decision broadcast",
+                phase_id
+            ))
+        })?;
         let decision_msg = DecisionMessage {
             phase_id,
             batch_id: phase.batch_id.unwrap_or_default(),
@@ -633,8 +638,8 @@ where
             responder_phase: current_phase,
             responder_state_version: state_version,
             state_snapshot: snapshot,
-            pending_batches: Vec::new(), // TODO: Include relevant pending batches
-            committed_phases: Vec::new(), // TODO: Include recent committed phases
+            pending_batches: Vec::new(), // Future enhancement: include pending batches for sync
+            committed_phases: Vec::new(), // Future enhancement: include recent committed phases
         };
 
         let message = ProtocolMessage::sync_response(self.node_id, from, response);
