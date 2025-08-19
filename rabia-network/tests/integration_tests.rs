@@ -12,13 +12,14 @@ use tracing_subscriber::fmt::try_init;
 use rabia_core::{messages::*, network::NetworkTransport, NodeId};
 use rabia_network::{TcpNetwork, TcpNetworkConfig};
 
-/// Test basic TCP connection establishment between two nodes
+/// Test basic TCP connection establishment between three nodes
 #[tokio::test]
 async fn test_basic_tcp_connection() {
     let _ = try_init();
 
     let node1_id = NodeId::new();
     let node2_id = NodeId::new();
+    let node3_id = NodeId::new();
 
     // Create network configurations
     let config1 = TcpNetworkConfig {
@@ -29,35 +30,53 @@ async fn test_basic_tcp_connection() {
         bind_addr: "127.0.0.1:0".parse().unwrap(),
         ..Default::default()
     };
+    let config3 = TcpNetworkConfig {
+        bind_addr: "127.0.0.1:0".parse().unwrap(),
+        ..Default::default()
+    };
 
     // Start networks
     let network1 = TcpNetwork::new(node1_id, config1).await.unwrap();
     let network2 = TcpNetwork::new(node2_id, config2).await.unwrap();
+    let network3 = TcpNetwork::new(node3_id, config3).await.unwrap();
 
     let addr1 = network1.local_addr();
     let addr2 = network2.local_addr();
+    let addr3 = network3.local_addr();
 
-    info!("Node1 listening on {}, Node2 listening on {}", addr1, addr2);
+    info!("Node1 listening on {}, Node2 listening on {}, Node3 listening on {}", addr1, addr2, addr3);
 
-    // Connect network1 to network2
+    // Connect nodes in a triangle topology: 1 <-> 2 <-> 3 <-> 1
     network1.connect_to_peer(node2_id, addr2).await.unwrap();
+    network2.connect_to_peer(node3_id, addr3).await.unwrap();
+    network3.connect_to_peer(node1_id, addr1).await.unwrap();
 
-    // Wait for connection to establish
-    sleep(Duration::from_millis(100)).await;
+    // Wait for connections to establish
+    sleep(Duration::from_millis(200)).await;
 
     // Verify connections
     assert!(network1.is_connected(node2_id).await.unwrap());
+    assert!(network1.is_connected(node3_id).await.unwrap());
     assert!(network2.is_connected(node1_id).await.unwrap());
+    assert!(network2.is_connected(node3_id).await.unwrap());
+    assert!(network3.is_connected(node1_id).await.unwrap());
+    assert!(network3.is_connected(node2_id).await.unwrap());
 
     let connected_nodes1 = network1.get_connected_nodes().await.unwrap();
     let connected_nodes2 = network2.get_connected_nodes().await.unwrap();
+    let connected_nodes3 = network3.get_connected_nodes().await.unwrap();
 
     assert!(connected_nodes1.contains(&node2_id));
+    assert!(connected_nodes1.contains(&node3_id));
     assert!(connected_nodes2.contains(&node1_id));
+    assert!(connected_nodes2.contains(&node3_id));
+    assert!(connected_nodes3.contains(&node1_id));
+    assert!(connected_nodes3.contains(&node2_id));
 
     // Cleanup
     network1.shutdown().await;
     network2.shutdown().await;
+    network3.shutdown().await;
 
     info!("Basic TCP connection test completed successfully");
 }

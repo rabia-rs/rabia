@@ -83,17 +83,17 @@ fn benchmark_p2p_throughput(c: &mut Criterion) {
 
     let configs = vec![
         NetworkBenchConfig {
-            node_count: 2,
+            node_count: 3,
             message_count: 100,
             ..Default::default()
         },
         NetworkBenchConfig {
-            node_count: 2,
+            node_count: 3,
             message_count: 500,
             ..Default::default()
         },
         NetworkBenchConfig {
-            node_count: 2,
+            node_count: 3,
             message_count: 1000,
             ..Default::default()
         },
@@ -267,7 +267,7 @@ fn benchmark_large_messages(c: &mut Criterion) {
 
                     for _ in 0..iters {
                         let config = NetworkBenchConfig {
-                            node_count: 2,
+                            node_count: 3,
                             message_count: 10,
                             message_size,
                             ..Default::default()
@@ -426,7 +426,7 @@ fn benchmark_network_latency(c: &mut Criterion) {
 
             for _ in 0..iters {
                 let config = NetworkBenchConfig {
-                    node_count: 2,
+                    node_count: 3,
                     message_count: 1,
                     ..Default::default()
                 };
