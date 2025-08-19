@@ -26,9 +26,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     info!("🚀 Starting TCP Networking Example");
 
-    // Example 1: Two-node cluster
-    info!("📡 Example 1: Two-node TCP cluster");
-    run_two_node_cluster().await?;
+    // Example 1: Three-node cluster
+    info!("📡 Example 1: Three-node TCP cluster");
+    run_three_node_cluster().await?;
 
     // Example 2: Multi-node cluster with message broadcasting
     info!("📡 Example 2: Multi-node cluster with broadcasting");
@@ -42,12 +42,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     Ok(())
 }
 
-/// Example 1: Basic two-node TCP cluster
-async fn run_two_node_cluster() -> Result<(), Box<dyn std::error::Error>> {
-    info!("Setting up two TCP nodes...");
+/// Example 1: Basic three-node TCP cluster
+async fn run_three_node_cluster() -> Result<(), Box<dyn std::error::Error>> {
+    info!("Setting up three TCP nodes...");
 
     let node1_id = NodeId::new();
     let node2_id = NodeId::new();
+    let node3_id = NodeId::new();
 
     // Configure networks with specific ports
     let config1 = TcpNetworkConfig {
@@ -62,9 +63,16 @@ async fn run_two_node_cluster() -> Result<(), Box<dyn std::error::Error>> {
         ..Default::default()
     };
 
+    let config3 = TcpNetworkConfig {
+        bind_addr: "127.0.0.1:9003".parse()?,
+        peer_addresses: HashMap::new(),
+        ..Default::default()
+    };
+
     // Start networks
     let mut network1 = TcpNetwork::new(node1_id, config1).await?;
     let mut network2 = TcpNetwork::new(node2_id, config2).await?;
+    let mut network3 = TcpNetwork::new(node3_id, config3).await?;
 
     info!(
         "Node 1: {} listening on {}",
@@ -76,22 +84,35 @@ async fn run_two_node_cluster() -> Result<(), Box<dyn std::error::Error>> {
         node2_id,
         network2.local_addr()
     );
+    info!(
+        "Node 3: {} listening on {}",
+        node3_id,
+        network3.local_addr()
+    );
 
-    // Connect the nodes
-    info!("Connecting nodes...");
+    // Connect the nodes in a full mesh
+    info!("Connecting nodes in full mesh...");
     network1
         .connect_to_peer(node2_id, network2.local_addr())
         .await?;
+    network1
+        .connect_to_peer(node3_id, network3.local_addr())
+        .await?;
+    network2
+        .connect_to_peer(node3_id, network3.local_addr())
+        .await?;
 
-    // Wait for connection to establish
-    sleep(Duration::from_millis(200)).await;
+    // Wait for connections to establish
+    sleep(Duration::from_millis(500)).await;
 
     // Verify connectivity
     let connected1 = network1.get_connected_nodes().await?;
     let connected2 = network2.get_connected_nodes().await?;
+    let connected3 = network3.get_connected_nodes().await?;
 
     info!("Node 1 connected to: {:?}", connected1);
     info!("Node 2 connected to: {:?}", connected2);
+    info!("Node 3 connected to: {:?}", connected3);
 
     // Exchange messages
     info!("Exchanging test messages...");
@@ -125,7 +146,7 @@ async fn run_two_node_cluster() -> Result<(), Box<dyn std::error::Error>> {
         Err(_) => warn!("❌ Timeout receiving message"),
     }
 
-    // Send consensus proposal from node2 to node1
+    // Send consensus proposal from node2 to node3
     let commands = vec![
         Command::new("SET user:alice name=Alice"),
         Command::new("SET user:bob name=Bob"),
@@ -135,7 +156,7 @@ async fn run_two_node_cluster() -> Result<(), Box<dyn std::error::Error>> {
 
     let proposal = ProtocolMessage::new(
         node2_id,
-        Some(node1_id),
+        Some(node3_id),
         MessageType::Propose(ProposeMessage {
             phase_id: PhaseId::new(1),
             batch_id: BatchId::new(),
@@ -144,12 +165,12 @@ async fn run_two_node_cluster() -> Result<(), Box<dyn std::error::Error>> {
         }),
     );
 
-    network2.send_to(node1_id, proposal).await?;
+    network2.send_to(node3_id, proposal).await?;
 
-    // Receive on node1
-    match tokio::time::timeout(Duration::from_secs(3), network1.receive()).await {
+    // Receive on node3
+    match tokio::time::timeout(Duration::from_secs(3), network3.receive()).await {
         Ok(Ok((from, message))) => {
-            info!("✅ Node 1 received proposal from {}", from);
+            info!("✅ Node 3 received proposal from {}", from);
             if let MessageType::Propose(prop) = message.message_type {
                 info!(
                     "   Proposal: phase={}, value={:?}",
@@ -165,11 +186,40 @@ async fn run_two_node_cluster() -> Result<(), Box<dyn std::error::Error>> {
         Err(_) => warn!("❌ Timeout receiving proposal"),
     }
 
+    // Test broadcast from node3 to all others
+    info!("Testing broadcast from node 3...");
+    let broadcast_msg = ProtocolMessage::new(
+        node3_id,
+        None, // Broadcast to all
+        MessageType::HeartBeat(HeartBeatMessage {
+            current_phase: PhaseId::new(2),
+            last_committed_phase: PhaseId::new(1),
+            active: true,
+        }),
+    );
+
+    network3.broadcast(broadcast_msg, Some(node3_id)).await?;
+
+    // Receive broadcast on nodes 1 and 2
+    let mut received_count = 0;
+    for (i, network) in [&mut network1, &mut network2].iter_mut().enumerate() {
+        match tokio::time::timeout(Duration::from_secs(3), network.receive()).await {
+            Ok(Ok((from, _))) => {
+                received_count += 1;
+                info!("✅ Node {} received broadcast from {}", i + 1, from);
+            }
+            _ => warn!("❌ Node {} failed to receive broadcast", i + 1),
+        }
+    }
+
+    info!("📊 Broadcast results: {}/2 nodes received message", received_count);
+
     // Cleanup
     network1.shutdown().await;
     network2.shutdown().await;
+    network3.shutdown().await;
 
-    info!("✅ Two-node cluster example completed\n");
+    info!("✅ Three-node cluster example completed\n");
     Ok(())
 }
 
