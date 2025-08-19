@@ -98,7 +98,7 @@ impl PerformanceBenchmark {
         Self {
             config,
             memory_pool: Arc::new(MemoryPool::new(PoolConfig::default())),
-            serializer: Arc::new(BinarySerializer::default()),
+            serializer: Arc::new(BinarySerializer),
         }
     }
 

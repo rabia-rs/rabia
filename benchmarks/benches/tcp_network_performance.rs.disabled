@@ -5,11 +5,10 @@
 
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion};
 use std::collections::HashMap;
-use std::sync::Arc;
 use std::time::{Duration, Instant};
 use tokio::runtime::Runtime;
 use tokio::time::sleep;
-use tracing::{info, warn};
+use tracing::warn;
 
 use rabia_core::{
     messages::{HeartBeatMessage, MessageType, ProposeMessage, ProtocolMessage},
@@ -61,7 +60,7 @@ async fn create_tcp_cluster(config: &NetworkBenchConfig) -> Vec<TcpNetwork> {
     for i in 0..networks.len() {
         for j in 0..networks.len() {
             if i != j {
-                let target_node = networks[j].node_id;
+                let target_node = networks[j].node_id();
                 let target_addr = node_addresses[&target_node];
 
                 if let Err(e) = networks[i].connect_to_peer(target_node, target_addr).await {
@@ -112,14 +111,14 @@ fn benchmark_p2p_throughput(c: &mut Criterion) {
                         let mut sender = networks[0].clone();
                         let mut receiver = networks[1].clone();
 
-                        let target_node = receiver.node_id;
+                        let target_node = receiver.node_id();
 
                         let start = Instant::now();
 
                         // Send messages
                         for i in 0..config.message_count {
                             let message = ProtocolMessage::new(
-                                sender.node_id,
+                                sender.node_id(),
                                 Some(target_node),
                                 MessageType::HeartBeat(HeartBeatMessage {
                                     current_phase: PhaseId::new(i as u64),
@@ -197,7 +196,7 @@ fn benchmark_broadcast_performance(c: &mut Criterion) {
                         // Send broadcasts
                         for i in 0..config.message_count {
                             let message = ProtocolMessage::new(
-                                broadcaster.node_id,
+                                broadcaster.node_id(),
                                 None,
                                 MessageType::HeartBeat(HeartBeatMessage {
                                     current_phase: PhaseId::new(i as u64),
@@ -208,7 +207,7 @@ fn benchmark_broadcast_performance(c: &mut Criterion) {
 
                             black_box(
                                 broadcaster
-                                    .broadcast(message, Some(broadcaster.node_id))
+                                    .broadcast(message, Some(broadcaster.node_id()))
                                     .await
                                     .unwrap(),
                             );
@@ -277,7 +276,7 @@ fn benchmark_large_messages(c: &mut Criterion) {
                         let mut sender = networks[0].clone();
                         let mut receiver = networks[1].clone();
 
-                        let target_node = receiver.node_id;
+                        let target_node = receiver.node_id();
 
                         // Create large command batch
                         let commands: Vec<Command> = (0..message_size / 50)
@@ -290,7 +289,7 @@ fn benchmark_large_messages(c: &mut Criterion) {
                         // Send large messages
                         for i in 0..config.message_count {
                             let message = ProtocolMessage::new(
-                                sender.node_id,
+                                sender.node_id(),
                                 Some(target_node),
                                 MessageType::Propose(ProposeMessage {
                                     phase_id: PhaseId::new(i as u64),
@@ -362,13 +361,13 @@ fn benchmark_concurrent_connections(c: &mut Criterion) {
                         let mut handles = Vec::new();
                         for (i, sender_network) in sender_networks.iter().enumerate() {
                             let sender = sender_network.clone();
-                            let target_node = receiver_network.node_id;
+                            let target_node = receiver_network.node_id();
                             let messages_per_sender = config.message_count / concurrent_senders;
 
                             let handle = tokio::spawn(async move {
                                 for j in 0..messages_per_sender {
                                     let message = ProtocolMessage::new(
-                                        sender.node_id,
+                                        sender.node_id(),
                                         Some(target_node),
                                         MessageType::HeartBeat(HeartBeatMessage {
                                             current_phase: PhaseId::new((i * 1000 + j) as u64),
@@ -435,13 +434,13 @@ fn benchmark_network_latency(c: &mut Criterion) {
                 let mut sender = networks[0].clone();
                 let mut receiver = networks[1].clone();
 
-                let target_node = receiver.node_id;
+                let target_node = receiver.node_id();
 
                 let start = Instant::now();
 
                 // Send one message and measure round-trip
                 let message = ProtocolMessage::new(
-                    sender.node_id,
+                    sender.node_id(),
                     Some(target_node),
                     MessageType::HeartBeat(HeartBeatMessage {
                         current_phase: PhaseId::new(1),

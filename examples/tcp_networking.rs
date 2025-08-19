@@ -296,8 +296,8 @@ async fn run_multi_node_cluster() -> Result<(), Box<dyn std::error::Error>> {
 
     // Receive broadcast on all other nodes
     let mut received_count = 0;
-    for i in 1..networks.len() {
-        match tokio::time::timeout(Duration::from_secs(5), networks[i].receive()).await {
+    for (i, network) in networks.iter_mut().enumerate().skip(1) {
+        match tokio::time::timeout(Duration::from_secs(5), network.receive()).await {
             Ok(Ok((from, message))) => {
                 received_count += 1;
                 info!("✅ Node {} received broadcast from {}", i + 1, from);
@@ -427,13 +427,10 @@ async fn run_dynamic_topology() -> Result<(), Box<dyn std::error::Error>> {
         .await?;
 
     let mut received_by_original = 0;
-    for i in 0..networks.len() {
-        match tokio::time::timeout(Duration::from_secs(3), networks[i].receive()).await {
-            Ok(Ok((from, _))) => {
-                received_by_original += 1;
-                info!("✅ Original node {} received from new node {}", i + 1, from);
-            }
-            _ => {}
+    for (i, network) in networks.iter_mut().enumerate() {
+        if let Ok(Ok((from, _))) = tokio::time::timeout(Duration::from_secs(3), network.receive()).await {
+            received_by_original += 1;
+            info!("✅ Original node {} received from new node {}", i + 1, from);
         }
     }
 

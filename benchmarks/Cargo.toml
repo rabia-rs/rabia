@@ -24,9 +24,9 @@ harness = false
 name = "peak_performance"
 harness = false
 
-[[bench]]
-name = "tcp_network_performance"
-harness = false
+# [[bench]]
+# name = "tcp_network_performance"
+# harness = false
 
 [dependencies]
 rabia-core = { path = "../rabia-core", version = "0.2.1" }

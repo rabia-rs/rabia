@@ -47,7 +47,7 @@ impl Default for NodeId {
 
 impl From<u32> for NodeId {
     /// Creates a NodeId from a u32 for testing and examples.
-    /// 
+    ///
     /// This creates a deterministic UUID based on the input number,
     /// which is useful for testing and examples where predictable
     /// node IDs are needed.
@@ -78,7 +78,7 @@ impl From<u32> for NodeId {
 
 impl From<u64> for NodeId {
     /// Creates a NodeId from a u64 for testing and examples.
-    /// 
+    ///
     /// This creates a deterministic UUID based on the input number,
     /// which is useful for testing and examples where predictable
     /// node IDs are needed.
@@ -109,7 +109,7 @@ impl From<u64> for NodeId {
 
 impl From<i32> for NodeId {
     /// Creates a NodeId from an i32 for testing and examples.
-    /// 
+    ///
     /// This creates a deterministic UUID based on the input number,
     /// which is useful for testing and examples where predictable
     /// node IDs are needed.

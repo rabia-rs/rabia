@@ -25,6 +25,7 @@ use rabia_persistence::InMemoryPersistence;
 /// Represents a node in the consensus cluster
 struct ClusterNode {
     node_id: NodeId,
+    #[allow(dead_code)]
     engine: Option<RabiaEngine<InMemoryStateMachine, InMemoryNetwork, InMemoryPersistence>>,
     command_sender: mpsc::UnboundedSender<EngineCommand>,
     is_leader: bool,
@@ -89,6 +90,7 @@ impl ClusterNode {
 /// Represents the entire consensus cluster
 struct ConsensusCluster {
     nodes: Vec<ClusterNode>,
+    #[allow(dead_code)]
     cluster_config: ClusterConfig,
 }
 
