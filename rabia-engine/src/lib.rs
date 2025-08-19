@@ -15,28 +15,45 @@
 //!
 //! ## Example Usage
 //!
-//! ```rust
+//! ```rust,no_run
 //! use rabia_engine::{RabiaEngine, RabiaConfig};
-//! use rabia_core::state_machine::InMemoryStateMachine;
+//! use rabia_core::{state_machine::InMemoryStateMachine, network::ClusterConfig, NodeId};
 //! use rabia_network::InMemoryNetwork;
 //! use rabia_persistence::InMemoryPersistence;
-//! use rabia_core::NodeId;
+//! use std::collections::HashSet;
+//! use tokio::sync::mpsc;
 //!
-//! # tokio_test::block_on(async {
-//! let node_id = NodeId::new();
-//! let config = RabiaConfig::default();
-//! let state_machine = InMemoryStateMachine::new();
-//! let network = InMemoryNetwork::new(node_id);
-//! let persistence = InMemoryPersistence::new();
+//! #[tokio::main]
+//! async fn main() {
+//!     let node_id = NodeId::new();
+//!     let mut node_ids = HashSet::new();
+//!     node_ids.insert(node_id);
+//!     
+//!     let config = RabiaConfig::default();
+//!     let cluster_config = ClusterConfig::new(node_id, node_ids);
+//!     let state_machine = InMemoryStateMachine::new();
+//!     let network = InMemoryNetwork::new(node_id);
+//!     let persistence = InMemoryPersistence::new();
+//!     let (cmd_tx, cmd_rx) = mpsc::unbounded_channel();
 //!
-//! let engine = RabiaEngine::new(
-//!     node_id,
-//!     config,
-//!     state_machine,
-//!     network,
-//!     persistence,
-//! ).await.unwrap();
-//! # });
+//!     let engine = RabiaEngine::new(
+//!         node_id,
+//!         config,
+//!         cluster_config,
+//!         state_machine,
+//!         network,
+//!         persistence,
+//!         cmd_rx,
+//!     );
+//!
+//!     // Start the engine
+//!     let handle = tokio::spawn(async move {
+//!         engine.run().await
+//!     });
+//!     
+//!     // Use cmd_tx to send commands to the engine
+//!     // handle.await.unwrap();
+//! }
 //! ```
 
 pub mod config;

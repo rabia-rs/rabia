@@ -428,7 +428,9 @@ async fn run_dynamic_topology() -> Result<(), Box<dyn std::error::Error>> {
 
     let mut received_by_original = 0;
     for (i, network) in networks.iter_mut().enumerate() {
-        if let Ok(Ok((from, _))) = tokio::time::timeout(Duration::from_secs(3), network.receive()).await {
+        if let Ok(Ok((from, _))) =
+            tokio::time::timeout(Duration::from_secs(3), network.receive()).await
+        {
             received_by_original += 1;
             info!("✅ Original node {} received from new node {}", i + 1, from);
         }
