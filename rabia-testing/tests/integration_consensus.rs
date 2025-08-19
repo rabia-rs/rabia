@@ -28,9 +28,7 @@ async fn test_consensus_basic_no_faults() {
         name: "Basic Consensus Integration Test".to_string(),
         description: "Test normal consensus operation".to_string(),
         node_count: 3,
-        initial_commands: vec![
-            rabia_core::Command::new("SET key1 value1"),
-        ],
+        initial_commands: vec![rabia_core::Command::new("SET key1 value1")],
         faults: vec![],
         // Use EventualConsistency for CI reliability instead of strict AllCommitted
         expected_outcome: if std::env::var("CI").is_ok() {
@@ -171,7 +169,7 @@ async fn test_consensus_performance_basic() {
     assert!(result.is_ok(), "Performance test timed out");
 
     let perf_result = result.unwrap();
-    
+
     // Be more lenient in CI environments
     if std::env::var("CI").is_ok() {
         // In CI, just ensure we got some operations through

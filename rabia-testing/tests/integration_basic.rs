@@ -290,7 +290,11 @@ async fn test_engine_lifecycle() {
     let handle = tokio::spawn(async move { engine.run().await });
 
     // Give node time to initialize - increased for CI
-    let init_delay = if std::env::var("CI").is_ok() { 500 } else { 100 };
+    let init_delay = if std::env::var("CI").is_ok() {
+        500
+    } else {
+        100
+    };
     tokio::time::sleep(Duration::from_millis(init_delay)).await;
 
     // Send shutdown command
@@ -305,9 +309,9 @@ async fn test_engine_lifecycle() {
     } else {
         Duration::from_secs(30)
     };
-    
+
     let result = timeout(shutdown_timeout, handle).await;
-    
+
     if result.is_err() {
         if std::env::var("CI").is_ok() {
             println!("Engine shutdown timed out in CI environment - this is known to be flaky");
