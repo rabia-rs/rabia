@@ -44,7 +44,10 @@ async fn test_basic_tcp_connection() {
     let addr2 = network2.local_addr();
     let addr3 = network3.local_addr();
 
-    info!("Node1 listening on {}, Node2 listening on {}, Node3 listening on {}", addr1, addr2, addr3);
+    info!(
+        "Node1 listening on {}, Node2 listening on {}, Node3 listening on {}",
+        addr1, addr2, addr3
+    );
 
     // Connect nodes in a triangle topology: 1 <-> 2 <-> 3 <-> 1
     network1.connect_to_peer(node2_id, addr2).await.unwrap();

@@ -51,6 +51,12 @@ impl SubscriptionId {
     }
 }
 
+impl Default for SubscriptionId {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 /// Filter for notifications
 #[derive(Debug, Clone)]
 pub enum NotificationFilter {
@@ -103,6 +109,7 @@ pub struct NotificationBus {
     broadcast_tx: broadcast::Sender<ChangeNotification>,
 
     /// Individual subscriber channels
+    #[allow(clippy::type_complexity)]
     subscribers: Arc<
         RwLock<
             HashMap<
@@ -197,7 +204,7 @@ impl NotificationBus {
         }
 
         // Send to broadcast channel (for global listeners)
-        if let Err(_) = self.broadcast_tx.send(notification.clone()) {
+        if self.broadcast_tx.send(notification.clone()).is_err() {
             // No broadcast receivers, that's fine
         }
 
@@ -206,11 +213,9 @@ impl NotificationBus {
         let mut dropped_count = 0;
 
         for (filter, sender) in subscribers.values() {
-            if filter.matches(&notification) {
-                if let Err(_) = sender.send(notification.clone()) {
-                    // Subscriber channel is closed, will be cleaned up later
-                    dropped_count += 1;
-                }
+            if filter.matches(&notification) && sender.send(notification.clone()).is_err() {
+                // Subscriber channel is closed, will be cleaned up later
+                dropped_count += 1;
             }
         }
 

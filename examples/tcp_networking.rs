@@ -212,7 +212,10 @@ async fn run_three_node_cluster() -> Result<(), Box<dyn std::error::Error>> {
         }
     }
 
-    info!("📊 Broadcast results: {}/2 nodes received message", received_count);
+    info!(
+        "📊 Broadcast results: {}/2 nodes received message",
+        received_count
+    );
 
     // Cleanup
     network1.shutdown().await;

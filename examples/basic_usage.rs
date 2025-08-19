@@ -15,12 +15,12 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let node1_id = NodeId::new();
     let node2_id = NodeId::new();
     let node3_id = NodeId::new();
-    
+
     let mut all_nodes = HashSet::new();
     all_nodes.insert(node1_id);
     all_nodes.insert(node2_id);
     all_nodes.insert(node3_id);
-    
+
     let cluster_config = ClusterConfig::new(node1_id, all_nodes);
 
     // Create components for the primary node
@@ -30,10 +30,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let config = RabiaConfig::default();
 
     // Create command channel
-    let (cmd_tx, cmd_rx) = mpsc::unbounded_channel();
+    let (_cmd_tx, cmd_rx) = mpsc::unbounded_channel();
 
     // Create and start the consensus engine
-    let engine = RabiaEngine::new(
+    let _engine = RabiaEngine::new(
         node1_id,
         config,
         cluster_config,
@@ -43,7 +43,10 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         cmd_rx,
     );
 
-    println!("🚀 Starting Rabia consensus engine for primary node {} in 3-node cluster", node1_id);
+    println!(
+        "🚀 Starting Rabia consensus engine for primary node {} in 3-node cluster",
+        node1_id
+    );
     println!("   - Node 1 (primary): {}", node1_id);
     println!("   - Node 2: {}", node2_id);
     println!("   - Node 3: {}", node3_id);

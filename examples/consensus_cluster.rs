@@ -5,7 +5,10 @@
 
 use std::collections::HashSet;
 use std::time::Duration;
-use tokio::{sync::{mpsc, oneshot}, time::sleep};
+use tokio::{
+    sync::{mpsc, oneshot},
+    time::sleep,
+};
 use tracing::{info, warn};
 
 use rabia_core::{
@@ -15,7 +18,7 @@ use rabia_core::{
     validation::Validator,
     Command, CommandBatch, NodeId, PhaseId, StateValue,
 };
-use rabia_engine::{RabiaConfig, RabiaEngine, EngineCommand, CommandRequest};
+use rabia_engine::{CommandRequest, EngineCommand, RabiaConfig, RabiaEngine};
 use rabia_network::InMemoryNetwork;
 use rabia_persistence::InMemoryPersistence;
 
@@ -66,11 +69,9 @@ impl ClusterNode {
         }
 
         let (response_tx, _response_rx) = oneshot::channel();
-        let request = CommandRequest {
-            batch,
-            response_tx,
-        };
-        self.command_sender.send(EngineCommand::ProcessBatch(request))?;
+        let request = CommandRequest { batch, response_tx };
+        self.command_sender
+            .send(EngineCommand::ProcessBatch(request))?;
         Ok(())
     }
 

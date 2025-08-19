@@ -65,11 +65,14 @@ pub enum ExpectedOutcome {
 pub struct ConsensusTestHarness {
     simulator: Arc<NetworkSimulator>,
     nodes: HashMap<NodeId, Arc<ConsensusNode>>,
+    #[allow(dead_code)]
     test_duration: Duration,
+    #[allow(dead_code)]
     start_time: Instant,
 }
 
 struct ConsensusNode {
+    #[allow(dead_code)]
     node_id: NodeId,
     engine_tx: EngineCommandSender,
     #[allow(dead_code)]
@@ -202,7 +205,7 @@ impl ConsensusTestHarness {
                 );
                 self.simulator.remove_node(node_id).await;
 
-                let sim = self.simulator.clone();
+                let _sim = self.simulator.clone();
                 tokio::spawn(async move {
                     sleep(duration).await;
                     // Note: In a real implementation, we'd need to restart the node
