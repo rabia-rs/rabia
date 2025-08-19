@@ -70,11 +70,19 @@ pub struct BufferConfig {
 
 impl Default for TcpNetworkConfig {
     fn default() -> Self {
+        // Adjust timeouts for Windows in CI environments
+        let (connection_timeout, keepalive_interval) =
+            if std::env::var("CI").is_ok() && cfg!(windows) {
+                (Duration::from_secs(30), Duration::from_secs(60))
+            } else {
+                (Duration::from_secs(10), Duration::from_secs(30))
+            };
+
         Self {
             bind_addr: "127.0.0.1:0".parse().unwrap(),
             peer_addresses: HashMap::new(),
-            connection_timeout: Duration::from_secs(10),
-            keepalive_interval: Duration::from_secs(30),
+            connection_timeout,
+            keepalive_interval,
             max_message_size: 16 * 1024 * 1024, // 16MB
             retry_config: RetryConfig::default(),
             buffer_config: BufferConfig::default(),

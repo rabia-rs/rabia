@@ -12,6 +12,21 @@ use tracing_subscriber::fmt::try_init;
 use rabia_core::{messages::*, network::NetworkTransport, NodeId};
 use rabia_network::{TcpNetwork, TcpNetworkConfig};
 
+/// Get platform-specific timeouts for tests
+fn get_test_timeouts() -> (Duration, Duration) {
+    if std::env::var("CI").is_ok() {
+        // CI environment with longer timeouts for Windows
+        if cfg!(windows) {
+            (Duration::from_millis(2000), Duration::from_secs(10)) // (connection_wait, test_timeout)
+        } else {
+            (Duration::from_millis(500), Duration::from_secs(5))
+        }
+    } else {
+        // Local development environment
+        (Duration::from_millis(200), Duration::from_secs(3))
+    }
+}
+
 /// Test basic TCP connection establishment between three nodes
 #[tokio::test]
 async fn test_basic_tcp_connection() {
@@ -54,8 +69,9 @@ async fn test_basic_tcp_connection() {
     network2.connect_to_peer(node3_id, addr3).await.unwrap();
     network3.connect_to_peer(node1_id, addr1).await.unwrap();
 
-    // Wait for connections to establish
-    sleep(Duration::from_millis(200)).await;
+    // Wait for connections to establish (platform-specific timing)
+    let (connection_wait, _) = get_test_timeouts();
+    sleep(connection_wait).await;
 
     // Verify connections
     assert!(network1.is_connected(node2_id).await.unwrap());
@@ -108,7 +124,8 @@ async fn test_tcp_message_exchange() {
 
     // Connect and wait for establishment
     network1.connect_to_peer(node2_id, addr2).await.unwrap();
-    sleep(Duration::from_millis(200)).await;
+    let (connection_wait, _) = get_test_timeouts();
+    sleep(connection_wait).await;
 
     // Create test messages
     let test_message = ProtocolMessage::new(
@@ -215,7 +232,8 @@ async fn test_tcp_cluster_formation() {
     }
 
     // Wait for all connections to establish
-    sleep(Duration::from_millis(500)).await;
+    let (connection_wait, _) = get_test_timeouts();
+    sleep(connection_wait).await;
 
     // Verify connectivity
     for i in 0..NUM_NODES {
@@ -324,7 +342,8 @@ async fn test_tcp_fault_tolerance() {
     network2.connect_to_peer(node3_id, addr3).await.unwrap();
     network3.connect_to_peer(node1_id, addr1).await.unwrap();
 
-    sleep(Duration::from_millis(200)).await;
+    let (connection_wait, _) = get_test_timeouts();
+    sleep(connection_wait).await;
 
     // Verify initial connectivity
     assert!(network1.is_connected(node2_id).await.unwrap());

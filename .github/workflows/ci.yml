@@ -14,6 +14,7 @@ jobs:
   test:
     name: Test Suite
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
@@ -49,11 +50,11 @@ jobs:
     - name: Build all crates
       run: cargo build --verbose --all-features
 
+    - name: Set CI environment variable
+      run: echo "CI=true" >> $GITHUB_ENV
+      
     - name: Run tests
-      run: |
-        # Set CI environment variable for test adaptations
-        export CI=true
-        cargo test --verbose --all-features
+      run: cargo test --verbose --all-features
 
     - name: Run doc tests
       run: cargo test --doc --all-features
