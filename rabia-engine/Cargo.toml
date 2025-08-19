@@ -12,7 +12,7 @@ categories.workspace = true
 description = "Main consensus engine implementation for Rabia protocol"
 
 [dependencies]
-rabia-core = { path = "../rabia-core", version = "0.2.1" }
+rabia-core = { path = "../rabia-core", version = "0.3.0" }
 tokio = { workspace = true }
 serde = { workspace = true }
 uuid = { workspace = true }

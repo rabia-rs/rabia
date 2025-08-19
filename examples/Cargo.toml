@@ -1,7 +1,7 @@
 [package]
 name = "rabia-examples"
-version = "0.1.0"
-edition = "2021"
+version.workspace = true
+edition.workspace = true
 publish = false
 
 [[bin]]
@@ -29,12 +29,12 @@ name = "leader_usage"
 path = "leader_usage.rs"
 
 [dependencies]
-rabia-core = { path = "../rabia-core", version = "0.2.1" }
-rabia-engine = { path = "../rabia-engine", version = "0.2.1" }
-rabia-network = { path = "../rabia-network", version = "0.2.1" }
-rabia-persistence = { path = "../rabia-persistence", version = "0.2.1" }
-rabia-kvstore = { path = "../rabia-kvstore", version = "0.2.1" }
-rabia-leader = { path = "../rabia-leader", version = "0.2.1" }
+rabia-core = { path = "../rabia-core", version = "0.3.0" }
+rabia-engine = { path = "../rabia-engine", version = "0.3.0" }
+rabia-network = { path = "../rabia-network", version = "0.3.0" }
+rabia-persistence = { path = "../rabia-persistence", version = "0.3.0" }
+rabia-kvstore = { path = "../rabia-kvstore", version = "0.3.0" }
+rabia-leader = { path = "../rabia-leader", version = "0.3.0" }
 tokio = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
