@@ -340,10 +340,11 @@ where
     fn randomized_vote(&mut self, proposed_value: &StateValue) -> StateValue {
         // Rabia's randomized voting: bias towards V1 for liveness
         // while maintaining safety through randomization
+        // Adjusted probabilities to improve consensus completion in testing environments
         match proposed_value {
             StateValue::V0 => {
-                // For V0 proposals, vote V0 with probability 0.5, else VQuestion
-                if self.rng.gen_bool(0.5) {
+                // For V0 proposals, vote V0 with probability 0.7, else VQuestion
+                if self.rng.gen_bool(0.7) {
                     StateValue::V0
                 } else {
                     StateValue::VQuestion
@@ -351,7 +352,8 @@ where
             }
             StateValue::V1 => {
                 // For V1 proposals, vote V1 with higher probability for liveness
-                if self.rng.gen_bool(0.6) {
+                // Increased from 0.6 to 0.8 to improve consensus completion
+                if self.rng.gen_bool(0.8) {
                     StateValue::V1
                 } else {
                     StateValue::VQuestion
@@ -378,7 +380,13 @@ where
         // Check if we have enough votes to proceed to round 2
         if let Some(phase) = self.engine_state.get_phase(&vote.phase_id) {
             if let Some(majority_vote) = phase.has_round1_majority(self.engine_state.quorum_size) {
+                // Clear majority - proceed to round 2 with the majority result
                 self.proceed_to_round2(vote.phase_id, majority_vote, phase.round1_votes)
+                    .await?;
+            } else if phase.round1_votes.len() >= self.engine_state.quorum_size {
+                // No clear majority but we have enough votes - proceed with VQuestion
+                // This handles the case where votes are split and no value gets majority
+                self.proceed_to_round2(vote.phase_id, StateValue::VQuestion, phase.round1_votes)
                     .await?;
             }
         }
@@ -461,16 +469,16 @@ where
 
         match v1_count.cmp(&v0_count) {
             std::cmp::Ordering::Greater => {
-                // More V1 votes in round 1 - prefer V1
-                if self.rng.gen_bool(0.8) {
+                // More V1 votes in round 1 - prefer V1 strongly
+                if self.rng.gen_bool(0.9) {
                     StateValue::V1
                 } else {
                     StateValue::V0
                 }
             }
             std::cmp::Ordering::Less => {
-                // More V0 votes in round 1 - prefer V0
-                if self.rng.gen_bool(0.7) {
+                // More V0 votes in round 1 - prefer V0 strongly  
+                if self.rng.gen_bool(0.9) {
                     StateValue::V0
                 } else {
                     StateValue::V1
@@ -478,7 +486,8 @@ where
             }
             std::cmp::Ordering::Equal => {
                 // Tied or no clear preference - bias towards V1 for liveness
-                if self.rng.gen_bool(0.6) {
+                // Increased from 0.6 to 0.8 to improve consensus completion
+                if self.rng.gen_bool(0.8) {
                     StateValue::V1
                 } else {
                     StateValue::V0
