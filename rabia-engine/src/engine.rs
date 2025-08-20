@@ -200,25 +200,25 @@ where
 
         debug!("Proposing batch {} in phase {}", batch_id, phase_id);
 
-        // Randomly choose initial value (key aspect of Rabia protocol)
-        let initial_value = if self.rng.gen_bool(0.5) {
-            StateValue::V0
-        } else {
-            StateValue::V1
-        };
+        // In Rabia protocol, the proposing node suggests committing the batch
+        // The StateValue here represents the initial preference (commit = V1)
+        // However, the actual decision happens through the voting rounds
+        // where randomization occurs based on agreement between nodes
+        let proposed_value = StateValue::V1; // This node prefers to commit the batch
 
         // Update phase with proposal
         self.engine_state.update_phase(phase_id, |phase| {
             phase.batch_id = Some(batch_id);
-            phase.proposed_value = Some(initial_value);
+            phase.proposed_value = Some(proposed_value);
             phase.batch = Some(batch.clone());
         })?;
 
-        // Broadcast proposal
+        // Broadcast proposal containing the actual batch data
+        // The key fix is that we're proposing ACTUAL batch data, not random StateValues
         let proposal = ProposeMessage {
             phase_id,
             batch_id,
-            value: initial_value,
+            value: proposed_value,
             batch: Some(batch),
         };
 
