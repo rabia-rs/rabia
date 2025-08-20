@@ -352,11 +352,18 @@ async fn test_proposal_contains_actual_batch_data() {
     // This test verifies that the randomization timing fix is working correctly
     // The key insight is that proposals now contain actual batch data instead of random StateValues
     // and randomization happens during voting rounds, not at proposal time
-    
+
     // Verify that progress was made (phases advanced, indicating proposals were made)
-    let has_progress = test_result.actual_outcome.current_phases.iter().any(|&p| p > 0);
-    assert!(has_progress, "No progress made - proposals were not submitted properly");
-    
+    let has_progress = test_result
+        .actual_outcome
+        .current_phases
+        .iter()
+        .any(|&p| p > 0);
+    assert!(
+        has_progress,
+        "No progress made - proposals were not submitted properly"
+    );
+
     // If consensus was achieved, great! If not, that's also acceptable for this test
     // as the main goal is to verify the proposal/voting timing is correct
     if test_result.success {
@@ -364,10 +371,17 @@ async fn test_proposal_contains_actual_batch_data() {
     } else {
         // Verify there's some consistency - at least one node should have made progress
         // and there should be evidence of voting activity
-        println!("Consensus in progress (expected with randomization): {}", test_result.details);
-        
+        println!(
+            "Consensus in progress (expected with randomization): {}",
+            test_result.details
+        );
+
         // Additional check: verify the system is actively trying to reach consensus
-        let total_progress = test_result.actual_outcome.current_phases.iter().sum::<u64>();
+        let total_progress = test_result
+            .actual_outcome
+            .current_phases
+            .iter()
+            .sum::<u64>();
         assert!(total_progress > 0, "No consensus activity detected");
     }
 
@@ -417,23 +431,40 @@ async fn test_randomization_during_voting_only() {
 
     // This test verifies that randomization happens during voting rounds, not at proposal time
     // With deterministic seed, we can verify the voting behavior is consistent but randomized
-    
+
     // Verify that progress was made (phases advanced, indicating voting occurred)
-    let has_progress = test_result.actual_outcome.current_phases.iter().any(|&p| p > 0);
-    assert!(has_progress, "No progress made - voting was not working properly");
-    
+    let has_progress = test_result
+        .actual_outcome
+        .current_phases
+        .iter()
+        .any(|&p| p > 0);
+    assert!(
+        has_progress,
+        "No progress made - voting was not working properly"
+    );
+
     // If consensus was achieved, excellent! If not, that's expected with randomization
     if test_result.success {
-        println!("Consensus achieved with deterministic randomization: {}", test_result.details);
+        println!(
+            "Consensus achieved with deterministic randomization: {}",
+            test_result.details
+        );
     } else {
         // With randomization during voting, it's normal for consensus to take time
         // The key is that the system is making progress and voting is happening
-        println!("Randomized voting in progress (expected behavior): {}", test_result.details);
-        
+        println!(
+            "Randomized voting in progress (expected behavior): {}",
+            test_result.details
+        );
+
         // Verify voting activity occurred
-        let total_progress = test_result.actual_outcome.current_phases.iter().sum::<u64>();
+        let total_progress = test_result
+            .actual_outcome
+            .current_phases
+            .iter()
+            .sum::<u64>();
         assert!(total_progress > 0, "No voting activity detected");
-        
+
         // Since we're using a deterministic seed, the randomization should be consistent
         // across test runs, even if consensus doesn't complete immediately
         println!("Deterministic randomization working correctly with seed 42");

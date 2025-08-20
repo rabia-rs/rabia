@@ -477,7 +477,7 @@ where
                 }
             }
             std::cmp::Ordering::Less => {
-                // More V0 votes in round 1 - prefer V0 strongly  
+                // More V0 votes in round 1 - prefer V0 strongly
                 if self.rng.gen_bool(0.9) {
                     StateValue::V0
                 } else {
