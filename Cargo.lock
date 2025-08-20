@@ -352,6 +352,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "futures-sink"
+version = "0.3.31"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e575fab7d1e0dcb8d0c7bcf9a63ee213816ab51902e6d244a95819acacf1d4f7"
+
+[[package]]
 name = "futures-task"
 version = "0.3.31"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -365,6 +371,7 @@ checksum = "9fa08315bb612088cc391249efdc3bc77536f16c91f6cf495e6fbe85b20a4a81"
 dependencies = [
  "futures-core",
  "futures-macro",
+ "futures-sink",
  "futures-task",
  "pin-project-lite",
  "pin-utils",
@@ -708,17 +715,20 @@ checksum = "69cdb34c158ceb288df11e18b4bd39de994f6657d83847bdffdbd7f346754b0f"
 
 [[package]]
 name = "rabia-benchmarks"
-version = "0.1.0"
+version = "0.3.0"
 dependencies = [
  "bincode",
  "criterion",
  "rabia-core",
+ "rabia-network",
  "serde_json",
+ "tokio",
+ "tracing",
 ]
 
 [[package]]
 name = "rabia-core"
-version = "0.2.1"
+version = "0.3.0"
 dependencies = [
  "async-trait",
  "bincode",
@@ -735,7 +745,7 @@ dependencies = [
 
 [[package]]
 name = "rabia-engine"
-version = "0.2.1"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -744,6 +754,8 @@ dependencies = [
  "parking_lot",
  "proptest",
  "rabia-core",
+ "rabia-network",
+ "rabia-persistence",
  "rand 0.8.5",
  "serde",
  "thiserror",
@@ -755,7 +767,7 @@ dependencies = [
 
 [[package]]
 name = "rabia-examples"
-version = "0.1.0"
+version = "0.3.0"
 dependencies = [
  "rabia-core",
  "rabia-engine",
@@ -763,7 +775,6 @@ dependencies = [
  "rabia-leader",
  "rabia-network",
  "rabia-persistence",
- "serde_json",
  "tokio",
  "tracing",
  "tracing-subscriber",
@@ -771,7 +782,7 @@ dependencies = [
 
 [[package]]
 name = "rabia-kvstore"
-version = "0.2.1"
+version = "0.3.0"
 dependencies = [
  "async-trait",
  "bytes",
@@ -791,7 +802,7 @@ dependencies = [
 
 [[package]]
 name = "rabia-leader"
-version = "0.2.1"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -811,21 +822,26 @@ dependencies = [
 
 [[package]]
 name = "rabia-network"
-version = "0.2.1"
+version = "0.3.0"
 dependencies = [
  "async-trait",
+ "bincode",
+ "bytes",
+ "futures-util",
  "rabia-core",
  "serde",
+ "serde_json",
  "thiserror",
  "tokio",
  "tokio-test",
  "tracing",
+ "tracing-subscriber",
  "uuid",
 ]
 
 [[package]]
 name = "rabia-persistence"
-version = "0.2.1"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -845,7 +861,7 @@ dependencies = [
 
 [[package]]
 name = "rabia-testing"
-version = "0.1.0"
+version = "0.3.0"
 dependencies = [
  "anyhow",
  "async-trait",

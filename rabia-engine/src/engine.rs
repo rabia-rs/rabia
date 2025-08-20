@@ -97,16 +97,8 @@ where
                 // Handle incoming commands
                 command_opt = self.command_rx.recv() => {
                     if let Some(command) = command_opt {
-                        match command {
-                            EngineCommand::Shutdown => {
-                                info!("Shutting down consensus engine");
-                                break Ok(());
-                            }
-                            _ => {
-                                if let Err(e) = self.handle_command(command).await {
-                                    error!("Error handling command: {}", e);
-                                }
-                            }
+                        if let Err(e) = self.handle_command(command).await {
+                            error!("Error handling command: {}", e);
                         }
                     } else {
                         // Channel closed, exit loop
@@ -166,9 +158,8 @@ where
         match command {
             EngineCommand::ProcessBatch(request) => self.process_batch_request(request).await,
             EngineCommand::Shutdown => {
-                // This should be handled in the main loop, but if it gets here, return Ok
-                info!("Shutdown command handled");
-                Ok(())
+                info!("Shutting down consensus engine");
+                Err(RabiaError::internal("Shutdown requested"))
             }
             EngineCommand::ForcePhaseAdvance => self.advance_to_next_phase().await,
             EngineCommand::TriggerSync => self.initiate_sync().await,
@@ -539,7 +530,12 @@ where
         }
 
         // Broadcast decision
-        let phase = self.engine_state.get_phase(&phase_id).unwrap();
+        let phase = self.engine_state.get_phase(&phase_id).ok_or_else(|| {
+            RabiaError::internal(format!(
+                "Phase {} not found for decision broadcast",
+                phase_id
+            ))
+        })?;
         let decision_msg = DecisionMessage {
             phase_id,
             batch_id: phase.batch_id.unwrap_or_default(),
@@ -642,8 +638,8 @@ where
             responder_phase: current_phase,
             responder_state_version: state_version,
             state_snapshot: snapshot,
-            pending_batches: Vec::new(), // TODO: Include relevant pending batches
-            committed_phases: Vec::new(), // TODO: Include recent committed phases
+            pending_batches: Vec::new(), // Future enhancement: include pending batches for sync
+            committed_phases: Vec::new(), // Future enhancement: include recent committed phases
         };
 
         let message = ProtocolMessage::sync_response(self.node_id, from, response);

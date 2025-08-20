@@ -3,7 +3,8 @@
 // For now, it's a placeholder module
 
 pub struct FileSystemPersistence {
-    // TODO: Implement file-based persistence
+    // File-based persistence is not yet implemented - using in-memory for now
+    // Future enhancement: implement proper file-based storage with WAL
 }
 
 impl FileSystemPersistence {
