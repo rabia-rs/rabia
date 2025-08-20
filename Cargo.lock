@@ -769,12 +769,18 @@ dependencies = [
 name = "rabia-examples"
 version = "0.3.0"
 dependencies = [
+ "async-trait",
+ "bincode",
+ "bytes",
  "rabia-core",
  "rabia-engine",
  "rabia-kvstore",
  "rabia-leader",
  "rabia-network",
  "rabia-persistence",
+ "rand 0.8.5",
+ "serde",
+ "serde_json",
  "tokio",
  "tracing",
  "tracing-subscriber",

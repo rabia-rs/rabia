@@ -74,35 +74,51 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-rabia-core = "0.2"
-rabia-engine = "0.2" 
-rabia-kvstore = "0.2"  # Optional: for key-value storage
-rabia-leader = "0.2"   # Optional: for leader management
+rabia-core = "0.3.0"
+rabia-engine = "0.3.0" 
+rabia-network = "0.3.0"  # Optional: for TCP networking
+rabia-kvstore = "0.3.0"  # Optional: for key-value storage
+rabia-leader = "0.3.0"   # Optional: for leader management
 tokio = { version = "1.0", features = ["full"] }
 ```
 
 ### Basic Usage
 
 ```rust
-use rabia_core::{Command, NodeId, state_machine::InMemoryStateMachine};
+use rabia_core::{
+    network::ClusterConfig, state_machine::InMemoryStateMachine, 
+    Command, NodeId,
+};
 use rabia_engine::{RabiaEngine, RabiaConfig};
+use rabia_network::InMemoryNetwork;
 use rabia_persistence::InMemoryPersistence;
+use std::collections::HashSet;
 use tokio::sync::mpsc;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Create a simple 3-node cluster
-    let node_id = NodeId::new();
-    let config = RabiaConfig::default();
+    // Create cluster configuration with 3 nodes (minimum for consensus)
+    let node1_id = NodeId::new();
+    let node2_id = NodeId::new();
+    let node3_id = NodeId::new();
+
+    let mut all_nodes = HashSet::new();
+    all_nodes.insert(node1_id);
+    all_nodes.insert(node2_id);
+    all_nodes.insert(node3_id);
+
+    let cluster_config = ClusterConfig::new(node1_id, all_nodes);
     
     // Set up components
     let state_machine = InMemoryStateMachine::new();
+    let network = InMemoryNetwork::new(node1_id);
     let persistence = InMemoryPersistence::new();
-    let (cmd_tx, cmd_rx) = mpsc::unbounded_channel();
+    let config = RabiaConfig::default();
+    let (_cmd_tx, cmd_rx) = mpsc::unbounded_channel();
     
-    // Create and run consensus engine
-    let engine = RabiaEngine::new(
-        node_id,
+    // Create consensus engine
+    let _engine = RabiaEngine::new(
+        node1_id,
         config,
         cluster_config,
         state_machine,
@@ -111,12 +127,8 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         cmd_rx,
     );
     
-    // Submit commands
-    cmd_tx.send(Command::new("SET key1 value1"))?;
-    cmd_tx.send(Command::new("GET key1"))?;
-    
-    // Run consensus
-    engine.run().await?;
+    println!("✅ Rabia consensus engine created successfully!");
+    println!("   See examples/ directory for more comprehensive usage patterns");
     
     Ok(())
 }
@@ -302,10 +314,12 @@ let bytes = buffer.take_bytes(); // Zero-copy conversion
 The `examples/` directory contains comprehensive examples:
 
 - **[Basic Usage](examples/basic_usage.rs)** - Simple consensus setup
-- **[Multi-Node Cluster](examples/cluster.rs)** - Full cluster implementation  
-- **[Performance Tuning](examples/performance.rs)** - Optimization techniques
-- **[Fault Tolerance](examples/fault_tolerance.rs)** - Handling failures
-- **[Custom State Machine](examples/custom_state_machine.rs)** - Implementing your own state machine
+- **[Consensus Cluster](examples/consensus_cluster.rs)** - Full cluster with fault injection
+- **[TCP Networking](examples/tcp_networking.rs)** - Real network communication  
+- **[Custom State Machine](examples/custom_state_machine.rs)** - Simple key-value store implementation
+- **[KV Store Usage](examples/kvstore_usage.rs)** - Key-value store operations
+- **[Leader Management](examples/leader_usage.rs)** - Leader coordination
+- **[Performance Benchmark](examples/performance_benchmark.rs)** - Performance testing
 
 ## 🐳 Docker Support
 
@@ -328,17 +342,6 @@ docker run --rm rabia-rs/rabia performance_benchmark
 docker run --rm -it rabia-rs/rabia bash
 ```
 
-### Pre-built Images
-
-Pull pre-built images from Docker Hub:
-
-```bash
-# Latest release
-docker pull rabiars/rabia:latest
-
-# Specific version
-docker pull rabiars/rabia:v0.2.0
-```
 
 ## 🧪 Testing
 
@@ -511,14 +514,14 @@ When contributing performance improvements:
 ### 📋 Roadmap
 
 - [x] **v0.2.0**: Production KV Store with notifications and leader management
-- [ ] **v0.3.0**: TCP networking and production deployment features  
+- [x] **v0.3.0**: TCP networking and production deployment features  
 - [ ] **v1.0.0**: Production stability and long-term guarantees
 
 ## 🐛 Known Limitations
 
 - Currently implements crash fault tolerance (not Byzantine fault tolerance)
 - In-memory persistence only (suitable for many use cases, external persistence can be implemented via traits)
-- Network layer uses in-memory simulation (TCP networking planned for v0.3.0)
+- Network layer provides both in-memory simulation and TCP networking
 
 ## 📄 License
 
@@ -531,9 +534,16 @@ Licensed under the [Apache License, Version 2.0](LICENSE).
 - Rust async ecosystem (Tokio, Serde, etc.)
 - Performance optimization techniques from the Rust community
 
+## 📖 Documentation
+
+- **[Protocol Guide](PROTOCOL_GUIDE.md)** - Deep dive into the Rabia consensus algorithm
+- **[API Documentation](API_DOCUMENTATION.md)** - Complete API reference with examples  
+- **[Troubleshooting Guide](TROUBLESHOOTING.md)** - Common issues and solutions
+- **[Generated Docs](https://docs.rs/rabia-core)** - API documentation on docs.rs
+
 ## 📞 Support
 
-- **Documentation**: https://docs.rs/rabia-core
+- **Documentation**: Complete guides and API docs in this repository
 - **Issues**: https://github.com/rabia-rs/rabia/issues  
 - **Discussions**: https://github.com/rabia-rs/rabia/discussions
 

@@ -28,6 +28,11 @@ path = "tcp_networking.rs"
 name = "leader_usage"
 path = "leader_usage.rs"
 
+[[bin]]
+name = "custom_state_machine"
+path = "custom_state_machine.rs"
+
+
 [dependencies]
 rabia-core = { path = "../rabia-core", version = "0.3.0" }
 rabia-engine = { path = "../rabia-engine", version = "0.3.0" }
@@ -38,3 +43,9 @@ rabia-leader = { path = "../rabia-leader", version = "0.3.0" }
 tokio = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }
+serde = { workspace = true }
+serde_json = "1.0"
+async-trait = { workspace = true }
+rand = "0.8"
+bincode = "1.3"
+bytes = "1.0"

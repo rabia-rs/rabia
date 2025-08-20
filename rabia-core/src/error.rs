@@ -192,6 +192,21 @@ impl RabiaError {
         }
     }
 
+    /// Creates a new timeout error with the given operation.
+    ///
+    /// # Examples
+    ///
+    /// ```rust
+    /// use rabia_core::RabiaError;
+    ///
+    /// let error = RabiaError::timeout("consensus operation");
+    /// ```
+    pub fn timeout(operation: impl Into<String>) -> Self {
+        Self::Timeout {
+            operation: operation.into(),
+        }
+    }
+
     /// Creates a new serialization error with the given message.
     ///
     /// # Examples
