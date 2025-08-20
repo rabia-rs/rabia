@@ -28,3 +28,5 @@ bytes = { workspace = true }
 [dev-dependencies]
 tokio-test = { workspace = true }
 proptest = { workspace = true }
+rabia-network = { path = "../rabia-network", version = "0.3.0" }
+rabia-persistence = { path = "../rabia-persistence", version = "0.3.0" }

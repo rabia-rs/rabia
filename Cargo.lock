@@ -754,6 +754,8 @@ dependencies = [
  "parking_lot",
  "proptest",
  "rabia-core",
+ "rabia-network",
+ "rabia-persistence",
  "rand 0.8.5",
  "serde",
  "thiserror",

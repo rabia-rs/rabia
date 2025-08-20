@@ -17,7 +17,7 @@
 //!
 //! ### TCP Networking
 //!
-//! ```rust
+//! ```rust,no_run
 //! use rabia_network::{TcpNetwork, TcpNetworkConfig};
 //! use rabia_core::{NodeId, network::NetworkTransport};
 //!
@@ -51,4 +51,4 @@ pub mod in_memory;
 pub mod tcp;
 
 pub use in_memory::*;
-pub use tcp::{BufferConfig, RetryConfig, TcpNetwork, TcpNetworkConfig};
+pub use tcp::{TcpNetwork, TcpNetworkConfig, RetryConfig, BufferConfig};
