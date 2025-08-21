@@ -18,6 +18,7 @@ use rabia_core::{
 };
 
 use crate::{
+    network::TcpNetwork,
     CommandRequest, EngineCommand, EngineCommandReceiver, EngineState, LeaderSelector, RabiaConfig,
 };
 
@@ -75,7 +76,53 @@ where
             leader_selector,
         }
     }
+}
 
+impl<SM, PL> RabiaEngine<SM, TcpNetwork, PL>
+where
+    SM: StateMachine + 'static,
+    PL: PersistenceLayer + 'static,
+{
+    /// Create a new RabiaEngine with integrated TCP networking
+    pub async fn new_with_tcp(
+        node_id: NodeId,
+        config: RabiaConfig,
+        cluster_config: ClusterConfig,
+        state_machine: SM,
+        persistence: PL,
+        command_rx: EngineCommandReceiver,
+    ) -> Result<Self> {
+        // Create TCP network from configuration
+        let network = TcpNetwork::new(node_id, config.network_config.clone()).await?;
+
+        let rng = match config.randomization_seed {
+            Some(seed) => rand::SeedableRng::seed_from_u64(seed),
+            None => rand::SeedableRng::from_entropy(),
+        };
+
+        let leader_selector = LeaderSelector::with_cluster(cluster_config.all_nodes.clone());
+
+        Ok(Self {
+            node_id,
+            config: config.clone(),
+            cluster_config: cluster_config.clone(),
+            state_machine: Arc::new(tokio::sync::Mutex::new(state_machine)),
+            network: Arc::new(tokio::sync::Mutex::new(network)),
+            persistence: Arc::new(persistence),
+            engine_state: Arc::new(EngineState::new(cluster_config.quorum_size)),
+            command_rx,
+            rng,
+            leader_selector,
+        })
+    }
+}
+
+impl<SM, NT, PL> RabiaEngine<SM, NT, PL>
+where
+    SM: StateMachine + 'static,
+    NT: NetworkTransport + 'static,
+    PL: PersistenceLayer + 'static,
+{
     /// Get the current leader node ID
     pub fn get_leader(&self) -> Option<NodeId> {
         self.leader_selector.get_leader()

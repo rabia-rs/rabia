@@ -132,7 +132,7 @@ async fn test_simple_network() {
         .try_init();
 
     use rabia_core::{network::NetworkTransport, NodeId};
-    use rabia_network::InMemoryNetwork;
+    use rabia_testing::InMemoryNetwork;
 
     let node_id = NodeId::new();
     let network = InMemoryNetwork::new(node_id);
@@ -161,8 +161,8 @@ async fn test_simple_engine() {
 
     use rabia_core::{network::ClusterConfig, state_machine::InMemoryStateMachine, NodeId};
     use rabia_engine::{EngineCommand, RabiaEngine};
-    use rabia_network::InMemoryNetwork;
     use rabia_persistence::InMemoryPersistence;
+    use rabia_testing::InMemoryNetwork;
     use std::collections::HashSet;
     use tokio::sync::mpsc;
 

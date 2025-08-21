@@ -18,7 +18,7 @@
 //! ```rust,no_run
 //! use rabia_engine::{RabiaEngine, RabiaConfig};
 //! use rabia_core::{state_machine::InMemoryStateMachine, network::ClusterConfig, NodeId};
-//! use rabia_network::InMemoryNetwork;
+//! use rabia_testing::InMemoryNetwork;
 //! use rabia_persistence::InMemoryPersistence;
 //! use std::collections::HashSet;
 //! use tokio::sync::mpsc;
@@ -59,9 +59,11 @@
 pub mod config;
 pub mod engine;
 pub mod leader;
+pub mod network;
 pub mod state;
 
 pub use config::*;
 pub use engine::*;
 pub use leader::*;
+pub use network::*;
 pub use state::*;

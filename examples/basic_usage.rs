@@ -2,8 +2,8 @@ use rabia_core::{
     network::ClusterConfig, state_machine::InMemoryStateMachine, Command, CommandBatch, NodeId,
 };
 use rabia_engine::{RabiaConfig, RabiaEngine};
-use rabia_network::InMemoryNetwork;
 use rabia_persistence::InMemoryPersistence;
+use rabia_testing::InMemoryNetwork;
 use std::collections::HashSet;
 use tokio::sync::mpsc;
 

@@ -766,7 +766,7 @@ dependencies = [
  "bincode",
  "criterion",
  "rabia-core",
- "rabia-network",
+ "rabia-testing",
  "serde_json",
  "tokio",
  "tracing",
@@ -795,15 +795,17 @@ version = "0.3.0"
 dependencies = [
  "anyhow",
  "async-trait",
+ "bincode",
  "bytes",
  "dashmap",
+ "futures-util",
  "parking_lot",
  "proptest",
  "rabia-core",
- "rabia-network",
  "rabia-persistence",
  "rand 0.8.5",
  "serde",
+ "serde_json",
  "thiserror",
  "tokio",
  "tokio-test",
@@ -823,8 +825,9 @@ dependencies = [
  "kvstore-smr",
  "rabia-core",
  "rabia-engine",
- "rabia-network",
+ "rabia-kvstore",
  "rabia-persistence",
+ "rabia-testing",
  "rand 0.8.5",
  "serde",
  "serde_json",
@@ -834,13 +837,14 @@ dependencies = [
 ]
 
 [[package]]
-name = "rabia-network"
+name = "rabia-kvstore"
 version = "0.3.0"
 dependencies = [
  "async-trait",
- "bincode",
  "bytes",
- "futures-util",
+ "crossbeam-channel",
+ "dashmap",
+ "parking_lot",
  "rabia-core",
  "serde",
  "serde_json",
@@ -875,7 +879,7 @@ dependencies = [
  "proptest",
  "rabia-core",
  "rabia-engine",
- "rabia-network",
+ "rabia-kvstore",
  "rabia-persistence",
  "rand 0.8.5",
  "serde",

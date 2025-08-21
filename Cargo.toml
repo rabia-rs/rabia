@@ -2,7 +2,7 @@
 members = [
     "rabia-core",
     "rabia-engine", 
-    "rabia-network",
+    "rabia-kvstore",
     "rabia-persistence",
     "rabia-testing",
     "examples",

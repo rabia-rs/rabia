@@ -1,3 +1,4 @@
+use crate::network::TcpNetworkConfig;
 use std::time::Duration;
 
 #[derive(Debug, Clone)]
@@ -13,6 +14,7 @@ pub struct RabiaConfig {
     pub max_retries: usize,
     pub backoff_base: Duration,
     pub backoff_max: Duration,
+    pub network_config: TcpNetworkConfig,
 }
 
 impl Default for RabiaConfig {
@@ -29,6 +31,7 @@ impl Default for RabiaConfig {
             max_retries: 3,
             backoff_base: Duration::from_millis(100),
             backoff_max: Duration::from_secs(10),
+            network_config: TcpNetworkConfig::default(),
         }
     }
 }
@@ -60,6 +63,11 @@ impl RabiaConfig {
 
     pub fn with_randomization_seed(mut self, seed: u64) -> Self {
         self.randomization_seed = Some(seed);
+        self
+    }
+
+    pub fn with_network_config(mut self, config: TcpNetworkConfig) -> Self {
+        self.network_config = config;
         self
     }
 }

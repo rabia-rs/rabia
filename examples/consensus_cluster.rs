@@ -19,8 +19,8 @@ use rabia_core::{
     Command, CommandBatch, NodeId, PhaseId, StateValue,
 };
 use rabia_engine::{CommandRequest, EngineCommand, RabiaConfig, RabiaEngine};
-use rabia_network::InMemoryNetwork;
 use rabia_persistence::InMemoryPersistence;
+use rabia_testing::InMemoryNetwork;
 
 /// Represents a node in the consensus cluster
 struct ClusterNode {

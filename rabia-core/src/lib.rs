@@ -40,6 +40,7 @@ pub mod messages;
 pub mod network;
 pub mod persistence;
 pub mod serialization;
+pub mod smr;
 pub mod state_machine;
 pub mod types;
 pub mod validation;
