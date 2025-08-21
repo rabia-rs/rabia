@@ -19,35 +19,71 @@
 //! ## Building Your SMR Application
 //!
 //! ```rust
-//! use rabia_core::smr::{StateMachine, Operation, OperationResult};
+//! use rabia_core::smr::StateMachine;
 //! use async_trait::async_trait;
+//! use serde::{Deserialize, Serialize};
 //!
-//! // Define your application state
-//! pub struct CounterSMR {
-//!     value: i64,
+//! #[derive(Clone, Serialize, Deserialize)]
+//! pub struct CounterCommand {
+//!     pub operation: String, // "increment", "decrement", "get"
+//!     pub value: i64,
 //! }
 //!
-//! // Implement the StateMachine trait
+//! #[derive(Clone, Serialize, Deserialize)]
+//! pub struct CounterResponse {
+//!     pub value: i64,
+//!     pub success: bool,
+//! }
+//!
+//! #[derive(Clone, Serialize, Deserialize)]
+//! pub struct CounterState {
+//!     pub value: i64,
+//! }
+//!
+//! #[derive(Clone)]
+//! pub struct CounterSMR {
+//!     state: CounterState,
+//! }
+//!
 //! #[async_trait]
 //! impl StateMachine for CounterSMR {
-//!     async fn apply_operation(&mut self, op: &Operation) -> OperationResult {
+//!     type Command = CounterCommand;
+//!     type Response = CounterResponse;
+//!     type State = CounterState;
+//!
+//!     async fn apply_command(&mut self, command: Self::Command) -> Self::Response {
 //!         // Your deterministic operation logic here
 //!         // This will execute identically on all replicas
-//!         match op.operation_type.as_str() {
+//!         match command.operation.as_str() {
 //!             "increment" => {
-//!                 self.value += 1;
-//!                 Ok(bincode::serialize(&self.value)?)
+//!                 self.state.value += command.value;
+//!                 CounterResponse { value: self.state.value, success: true }
 //!             }
-//!             _ => Err("Unknown operation".into())
+//!             "decrement" => {
+//!                 self.state.value -= command.value;
+//!                 CounterResponse { value: self.state.value, success: true }
+//!             }
+//!             "get" => {
+//!                 CounterResponse { value: self.state.value, success: true }
+//!             }
+//!             _ => CounterResponse { value: self.state.value, success: false }
 //!         }
 //!     }
-//!     
-//!     async fn snapshot(&self) -> OperationResult {
-//!         Ok(bincode::serialize(&self.value)?)
+//!
+//!     fn get_state(&self) -> Self::State {
+//!         self.state.clone()
 //!     }
-//!     
-//!     async fn restore_from_snapshot(&mut self, data: &[u8]) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-//!         self.value = bincode::deserialize(data)?;
+//!
+//!     fn set_state(&mut self, state: Self::State) {
+//!         self.state = state;
+//!     }
+//!
+//!     fn serialize_state(&self) -> Vec<u8> {
+//!         bincode::serialize(&self.state).unwrap_or_default()
+//!     }
+//!
+//!     fn deserialize_state(&mut self, data: &[u8]) -> Result<(), Box<dyn std::error::Error>> {
+//!         self.state = bincode::deserialize(data)?;
 //!         Ok(())
 //!     }
 //! }
