@@ -184,7 +184,7 @@ impl BankingResponse {
 }
 
 /// State of the banking state machine
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
 pub struct BankingState {
     /// All accounts indexed by account ID
     pub accounts: HashMap<String, Account>,
@@ -192,16 +192,6 @@ pub struct BankingState {
     pub transactions: Vec<Transaction>,
     /// Total number of operations performed
     pub operation_count: u64,
-}
-
-impl Default for BankingState {
-    fn default() -> Self {
-        Self {
-            accounts: HashMap::new(),
-            transactions: Vec::new(),
-            operation_count: 0,
-        }
-    }
 }
 
 /// Banking state machine implementation

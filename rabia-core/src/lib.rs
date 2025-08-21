@@ -1,37 +1,60 @@
-//! # Rabia Core
+//! # Rabia Core - State Machine Replication Framework
 //!
-//! Core components and types for the Rabia consensus protocol implementation.
+//! Core components for building State Machine Replication (SMR) applications with the Rabia consensus protocol.
 //!
 //! This crate provides the fundamental building blocks for implementing
-//! the Rabia consensus algorithm, including:
+//! fault-tolerant distributed applications using the SMR pattern:
 //!
-//! ## Key Components
+//! ## SMR Framework Components
 //!
-//! - **Messages**: Protocol messages for communication between nodes
-//! - **State Machine**: Interface and implementation for deterministic state transitions
-//! - **Types**: Core types like NodeId, BatchId, PhaseId, and Commands
+//! - **StateMachine Trait**: Interface for implementing deterministic state machines
+//! - **Operation Types**: Core types for SMR operations, batching, and results
+//! - **Consensus Messages**: Protocol messages for coordinating operation ordering
+//! - **Node Management**: Types like NodeId, BatchId, PhaseId for cluster coordination
 //! - **Error Handling**: Comprehensive error types and recovery mechanisms
-//! - **Validation**: Message and state validation utilities
-//! - **Serialization**: High-performance binary serialization
+//! - **Serialization**: High-performance binary serialization for SMR operations
 //! - **Memory Management**: Optimized memory pools for reduced allocations
-//! - **Batching**: Command batching for improved throughput
+//! - **Validation**: Operation and state validation utilities
 //!
-//! ## Example Usage
+//! ## Building Your SMR Application
 //!
 //! ```rust
-//! use rabia_core::{Command, CommandBatch, NodeId, PhaseId};
+//! use rabia_core::smr::{StateMachine, Operation, OperationResult};
+//! use async_trait::async_trait;
 //!
-//! // Create commands
-//! let cmd1 = Command::new("SET key1 value1");
-//! let cmd2 = Command::new("GET key1");
+//! // Define your application state
+//! pub struct CounterSMR {
+//!     value: i64,
+//! }
 //!
-//! // Create a batch
-//! let batch = CommandBatch::new(vec![cmd1, cmd2]);
-//!
-//! // Create node and phase identifiers
-//! let node_id = NodeId::new();
-//! let phase_id = PhaseId::new(1);
+//! // Implement the StateMachine trait
+//! #[async_trait]
+//! impl StateMachine for CounterSMR {
+//!     async fn apply_operation(&mut self, op: &Operation) -> OperationResult {
+//!         // Your deterministic operation logic here
+//!         // This will execute identically on all replicas
+//!         match op.operation_type.as_str() {
+//!             "increment" => {
+//!                 self.value += 1;
+//!                 Ok(bincode::serialize(&self.value)?)
+//!             }
+//!             _ => Err("Unknown operation".into())
+//!         }
+//!     }
+//!     
+//!     async fn snapshot(&self) -> OperationResult {
+//!         Ok(bincode::serialize(&self.value)?)
+//!     }
+//!     
+//!     async fn restore_from_snapshot(&mut self, data: &[u8]) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
+//!         self.value = bincode::deserialize(data)?;
+//!         Ok(())
+//!     }
+//! }
 //! ```
+//!
+//! This framework handles consensus, networking, and persistence,
+//! letting you focus on your application's business logic.
 
 pub mod batching;
 pub mod error;

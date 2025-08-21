@@ -76,21 +76,12 @@ impl CounterResponse {
 }
 
 /// State of the counter state machine
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
 pub struct CounterState {
     /// The current counter value
     pub value: i64,
     /// Total number of operations performed
     pub operation_count: u64,
-}
-
-impl Default for CounterState {
-    fn default() -> Self {
-        Self {
-            value: 0,
-            operation_count: 0,
-        }
-    }
 }
 
 /// Simple counter state machine implementation

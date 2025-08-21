@@ -18,8 +18,8 @@ use rabia_core::{
 };
 
 use crate::{
-    network::TcpNetwork,
-    CommandRequest, EngineCommand, EngineCommandReceiver, EngineState, LeaderSelector, RabiaConfig,
+    network::TcpNetwork, CommandRequest, EngineCommand, EngineCommandReceiver, EngineState,
+    LeaderSelector, RabiaConfig,
 };
 
 pub struct RabiaEngine<SM, NT, PL>

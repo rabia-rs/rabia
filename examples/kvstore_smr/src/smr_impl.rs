@@ -11,19 +11,10 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 /// KVStore state that can be serialized/deserialized
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct KVStoreState {
     pub data: HashMap<String, ValueEntry>,
     pub version: u64,
-}
-
-impl Default for KVStoreState {
-    fn default() -> Self {
-        Self {
-            data: HashMap::new(),
-            version: 0,
-        }
-    }
 }
 
 /// SMR wrapper for KVStore that implements the StateMachine trait

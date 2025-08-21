@@ -5,7 +5,6 @@
 use banking_smr::{BankingCommand, BankingData, BankingSMR};
 use rabia_core::smr::StateMachine;
 use tracing::{info, Level};
-use tracing_subscriber;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
