@@ -41,7 +41,6 @@ rabia-rs/
 ├── rabia-network/      # Network transport abstractions
 ├── rabia-persistence/  # Persistence layer implementations
 ├── rabia-kvstore/      # Production-grade key-value store
-├── rabia-leader/       # Leader management and cluster coordination
 ├── rabia-testing/      # Testing utilities and network simulation
 ├── examples/           # Usage examples and tutorials
 └── benchmarks/         # Performance benchmarks
@@ -78,7 +77,6 @@ rabia-core = "0.3.0"
 rabia-engine = "0.3.0" 
 rabia-network = "0.3.0"  # Optional: for TCP networking
 rabia-kvstore = "0.3.0"  # Optional: for key-value storage
-rabia-leader = "0.3.0"   # Optional: for leader management
 tokio = { version = "1.0", features = ["full"] }
 ```
 

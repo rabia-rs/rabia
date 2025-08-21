@@ -24,22 +24,31 @@ path = "performance_benchmark.rs"
 name = "tcp_networking"
 path = "tcp_networking.rs"
 
-[[bin]]
-name = "leader_usage"
-path = "leader_usage.rs"
 
 [[bin]]
 name = "custom_state_machine"
 path = "custom_state_machine.rs"
 
+[[bin]]
+name = "kvstore_smr_example"
+path = "kvstore_smr_example.rs"
+
+[[bin]]
+name = "counter_smr_example"
+path = "counter_smr_example.rs"
+
+[[bin]]
+name = "banking_smr_example"
+path = "banking_smr_example.rs"
 
 [dependencies]
 rabia-core = { path = "../rabia-core", version = "0.3.0" }
 rabia-engine = { path = "../rabia-engine", version = "0.3.0" }
 rabia-network = { path = "../rabia-network", version = "0.3.0" }
 rabia-persistence = { path = "../rabia-persistence", version = "0.3.0" }
-rabia-kvstore = { path = "../rabia-kvstore", version = "0.3.0" }
-rabia-leader = { path = "../rabia-leader", version = "0.3.0" }
+kvstore-smr = { path = "kvstore_smr", version = "0.3.0" }
+counter-smr = { path = "counter_smr", version = "0.3.0" }
+banking-smr = { path = "banking_smr", version = "0.3.0" }
 tokio = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }

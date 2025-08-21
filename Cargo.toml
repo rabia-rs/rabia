@@ -5,9 +5,10 @@ members = [
     "rabia-network",
     "rabia-persistence",
     "rabia-testing",
-    "rabia-kvstore",
-    "rabia-leader",
     "examples",
+    "examples/kvstore_smr",
+    "examples/counter_smr", 
+    "examples/banking_smr",
     "benchmarks"
 ]
 resolver = "2"

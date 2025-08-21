@@ -58,8 +58,10 @@
 
 pub mod config;
 pub mod engine;
+pub mod leader;
 pub mod state;
 
 pub use config::*;
 pub use engine::*;
+pub use leader::*;
 pub use state::*;

@@ -17,7 +17,9 @@ use rabia_core::{
     BatchId, CommandBatch, NodeId, PhaseId, RabiaError, Result, StateValue, Validator,
 };
 
-use crate::{CommandRequest, EngineCommand, EngineCommandReceiver, EngineState, RabiaConfig};
+use crate::{
+    CommandRequest, EngineCommand, EngineCommandReceiver, EngineState, LeaderSelector, RabiaConfig,
+};
 
 pub struct RabiaEngine<SM, NT, PL>
 where
@@ -35,6 +37,7 @@ where
     engine_state: Arc<EngineState>,
     command_rx: EngineCommandReceiver,
     rng: rand::rngs::StdRng,
+    leader_selector: LeaderSelector,
 }
 
 impl<SM, NT, PL> RabiaEngine<SM, NT, PL>
@@ -57,6 +60,8 @@ where
             None => rand::SeedableRng::from_entropy(),
         };
 
+        let leader_selector = LeaderSelector::with_cluster(cluster_config.all_nodes.clone());
+
         Self {
             node_id,
             config: config.clone(),
@@ -67,7 +72,37 @@ where
             engine_state: Arc::new(EngineState::new(cluster_config.quorum_size)),
             command_rx,
             rng,
+            leader_selector,
         }
+    }
+
+    /// Get the current leader node ID
+    pub fn get_leader(&self) -> Option<NodeId> {
+        self.leader_selector.get_leader()
+    }
+
+    /// Check if this node is the current leader
+    pub fn is_leader(&self) -> bool {
+        self.leader_selector.is_leader(self.node_id)
+    }
+
+    /// Get current leadership information
+    pub fn get_leadership_info(&self) -> crate::LeadershipInfo {
+        self.leader_selector.get_leadership_info()
+    }
+
+    /// Update cluster membership and determine new leader
+    pub fn update_cluster_membership(&mut self, nodes: HashSet<NodeId>) -> Option<NodeId> {
+        let new_leader = self.leader_selector.update_cluster_view(nodes.clone());
+
+        // Update the engine state's active nodes as well
+        self.engine_state.update_active_nodes(nodes);
+
+        if let Some(leader) = new_leader {
+            info!("Leadership changed to node {}", leader);
+        }
+
+        new_leader
     }
 
     /// Save the current engine state to persistence.
@@ -874,10 +909,14 @@ where
 {
     async fn on_node_connected(&self, node_id: NodeId) {
         info!("Node {} connected", node_id);
+        // Note: Leadership update would require mutable access
+        // In a real implementation, this would trigger a cluster membership update
     }
 
     async fn on_node_disconnected(&self, node_id: NodeId) {
         warn!("Node {} disconnected", node_id);
+        // Note: Leadership update would require mutable access
+        // In a real implementation, this would trigger a cluster membership update
     }
 
     async fn on_network_partition(&self, active_nodes: HashSet<NodeId>) {
@@ -885,7 +924,13 @@ where
             "Network partition detected, {} active nodes",
             active_nodes.len()
         );
-        self.engine_state.update_active_nodes(active_nodes);
+        self.engine_state.update_active_nodes(active_nodes.clone());
+
+        // Note: Leadership update would require mutable access to self
+        // In a real implementation, leadership would be updated here
+        // For now, we log the cluster change
+        let current_leader = self.leader_selector.get_leader();
+        info!("Current leader after partition: {:?}", current_leader);
     }
 
     async fn on_quorum_lost(&self) {
@@ -895,7 +940,12 @@ where
 
     async fn on_quorum_restored(&self, active_nodes: HashSet<NodeId>) {
         info!("Quorum restored with {} nodes", active_nodes.len());
-        self.engine_state.update_active_nodes(active_nodes);
+        self.engine_state.update_active_nodes(active_nodes.clone());
         self.engine_state.set_active(true);
+
+        // Note: Leadership update would require mutable access to self
+        // In a real implementation, leadership would be updated here
+        let current_leader = self.leader_selector.get_leader();
+        info!("Current leader after quorum restore: {:?}", current_leader);
     }
 }

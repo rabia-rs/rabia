@@ -10,8 +10,7 @@ rabia-core = { path = "../rabia-core", version = "0.3.0" }
 rabia-engine = { path = "../rabia-engine", version = "0.3.0" }
 rabia-network = { path = "../rabia-network", version = "0.3.0" }
 rabia-persistence = { path = "../rabia-persistence", version = "0.3.0" }
-rabia-kvstore = { path = "../rabia-kvstore", version = "0.3.0" }
-rabia-leader = { path = "../rabia-leader", version = "0.3.0" }
+kvstore-smr = { path = "../examples/kvstore_smr", version = "0.3.0" }
 tokio = { workspace = true }
 serde = { workspace = true }
 uuid = { workspace = true }
