@@ -17,14 +17,42 @@
 //! ## SMR Engine Usage
 //!
 //! ```rust,no_run
-//! use rabia_engine::{RabiaEngine, RabiaConfig};
-//! use rabia_core::{smr::StateMachine, network::ClusterConfig, NodeId, Operation};
+//! use rabia_engine::{RabiaEngine, RabiaConfig, EngineCommand, CommandRequest};
+//! use rabia_core::{state_machine::{StateMachine, Snapshot}, network::ClusterConfig, NodeId, Command, CommandBatch};
 //! use rabia_persistence::InMemoryPersistence;
 //! use std::collections::HashSet;
 //! use tokio::sync::mpsc;
+//! use bytes::Bytes;
 //!
-//! // Your custom state machine implementation
-//! use your_app::YourStateMachine;
+//! // Example state machine implementation
+//! #[derive(Clone)]
+//! struct ExampleStateMachine {
+//!     counter: i64,
+//! }
+//!
+//! #[async_trait::async_trait]
+//! impl StateMachine for ExampleStateMachine {
+//!     type State = i64;
+//!     
+//!     async fn apply_command(&mut self, _command: &Command) -> rabia_core::Result<Bytes> {
+//!         self.counter += 1;
+//!         Ok(Bytes::from(format!("Counter: {}", self.counter)))
+//!     }
+//!     
+//!     async fn create_snapshot(&self) -> rabia_core::Result<Snapshot> {
+//!         Ok(Snapshot::new(1, self.counter.to_be_bytes().to_vec()))
+//!     }
+//!     
+//!     async fn restore_snapshot(&mut self, snapshot: &Snapshot) -> rabia_core::Result<()> {
+//!         let bytes: [u8; 8] = snapshot.data.as_ref().try_into().unwrap_or([0; 8]);
+//!         self.counter = i64::from_be_bytes(bytes);
+//!         Ok(())
+//!     }
+//!     
+//!     async fn get_state(&self) -> Self::State {
+//!         self.counter
+//!     }
+//! }
 //!
 //! #[tokio::main]
 //! async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -36,29 +64,34 @@
 //!     let config = RabiaConfig::default();
 //!     let cluster_config = ClusterConfig::new(node_id, node_ids);
 //!     
-//!     // Your custom state machine
-//!     let state_machine = YourStateMachine::new();
+//!     // State machine and persistence
+//!     let state_machine = ExampleStateMachine { counter: 0 };
 //!     let persistence = InMemoryPersistence::new();
-//!     let (operation_tx, operation_rx) = mpsc::unbounded_channel();
+//!     
+//!     // Create command channel for engine commands
+//!     let (command_tx, command_rx) = mpsc::unbounded_channel();
 //!
-//!     // Create SMR replica coordinator
-//!     let engine = RabiaEngine::new(
+//!     // Create SMR replica coordinator with TCP networking
+//!     let engine = RabiaEngine::new_with_tcp(
 //!         node_id,
 //!         config,
 //!         cluster_config,
 //!         state_machine,
 //!         persistence,
-//!         operation_rx,
-//!     );
+//!         command_rx,
+//!     ).await?;
 //!
 //!     // Start SMR coordination
 //!     let handle = tokio::spawn(async move {
 //!         engine.run().await
 //!     });
 //!     
-//!     // Submit operations to be ordered and applied consistently
-//!     let operation = Operation::new(b"your_operation_data".to_vec());
-//!     operation_tx.send(operation)?;
+//!     // Submit batch for consensus
+//!     let command = Command::new(b"your_command_data".to_vec());
+//!     let batch = CommandBatch::new(vec![command]);
+//!     let (response_tx, response_rx) = tokio::sync::oneshot::channel();
+//!     let request = CommandRequest { batch, response_tx };
+//!     command_tx.send(EngineCommand::ProcessBatch(request))?;
 //!     
 //!     Ok(())
 //! }
