@@ -70,6 +70,35 @@ where
         }
     }
 
+    /// Save the current engine state to persistence.
+    async fn save_state(&self) -> Result<()> {
+        let current_phase = self.engine_state.current_phase();
+        let last_committed_phase = self.engine_state.last_committed_phase();
+
+        // Get state machine snapshot
+        let snapshot = {
+            let sm = self.state_machine.lock().await;
+            Some(sm.create_snapshot().await?)
+        };
+
+        let engine_state = rabia_core::persistence::EngineState::new(
+            current_phase,
+            last_committed_phase,
+            snapshot,
+        );
+
+        let state_bytes = engine_state.to_bytes()?;
+        self.persistence.save_state(&state_bytes).await?;
+
+        debug!(
+            "Saved engine state: phase {}, committed {}",
+            current_phase.value(),
+            last_committed_phase.value()
+        );
+
+        Ok(())
+    }
+
     pub async fn run(mut self) -> Result<()> {
         info!("Starting Rabia consensus engine for node {}", self.node_id);
 
@@ -126,8 +155,11 @@ where
 
     async fn initialize(&mut self) -> Result<()> {
         // Try to restore state from persistence
-        if let Some(persisted_state) = self.persistence.load_state().await? {
+        if let Some(persisted_data) = self.persistence.load_state().await? {
             info!("Restoring state from persistence");
+
+            let persisted_state =
+                rabia_core::persistence::EngineState::from_bytes(&persisted_data)?;
 
             // Restore engine state
             self.engine_state.current_phase.store(
@@ -534,6 +566,11 @@ where
                         error!("Failed to commit phase {}: {}", phase_id, e);
                         return Err(e);
                     }
+
+                    // Save state after successful commit
+                    if let Err(e) = self.save_state().await {
+                        warn!("Failed to save state after commit: {}", e);
+                    }
                 }
             }
         }
@@ -613,6 +650,11 @@ where
                             decision.phase_id, e
                         );
                         return Err(e);
+                    }
+
+                    // Save state after successful commit
+                    if let Err(e) = self.save_state().await {
+                        warn!("Failed to save state after commit: {}", e);
                     }
                 }
             }

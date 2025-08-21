@@ -13,18 +13,11 @@ description = "Persistence layer implementation for Rabia consensus protocol"
 
 [dependencies]
 rabia-core = { path = "../rabia-core", version = "0.3.0" }
-tokio = { workspace = true }
-serde = { workspace = true }
-serde_json = { workspace = true }
-uuid = { workspace = true }
-bytes = { workspace = true }
-crc32fast = { workspace = true }
-tracing = { workspace = true }
-thiserror = { workspace = true }
-anyhow = { workspace = true }
+tokio = { workspace = true, features = ["fs"] }
 async-trait = { workspace = true }
 parking_lot = { workspace = true }
 
 [dev-dependencies]
 tokio-test = { workspace = true }
 proptest = { workspace = true }
+tempfile = { workspace = true }

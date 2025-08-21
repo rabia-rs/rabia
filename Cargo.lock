@@ -849,20 +849,13 @@ dependencies = [
 name = "rabia-persistence"
 version = "0.3.0"
 dependencies = [
- "anyhow",
  "async-trait",
- "bytes",
- "crc32fast",
  "parking_lot",
  "proptest",
  "rabia-core",
- "serde",
- "serde_json",
- "thiserror",
+ "tempfile",
  "tokio",
  "tokio-test",
- "tracing",
- "uuid",
 ]
 
 [[package]]

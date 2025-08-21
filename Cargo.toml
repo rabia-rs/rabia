@@ -50,3 +50,6 @@ version = "0.4"
 [workspace.dependencies.proptest]
 version = "1.4"
 
+[workspace.dependencies.tempfile]
+version = "3.8"
+
