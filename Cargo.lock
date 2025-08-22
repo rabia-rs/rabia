@@ -100,7 +100,7 @@ dependencies = [
 
 [[package]]
 name = "banking-smr"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "async-trait",
  "bincode",
@@ -222,7 +222,7 @@ checksum = "b94f61472cee1439c0b966b47e3aca9ae07e45d070759512cd390ea2bebc6675"
 
 [[package]]
 name = "counter-smr"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "async-trait",
  "bincode",
@@ -503,7 +503,7 @@ dependencies = [
 
 [[package]]
 name = "kvstore-smr"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "async-trait",
  "bincode",
@@ -761,7 +761,7 @@ checksum = "69cdb34c158ceb288df11e18b4bd39de994f6657d83847bdffdbd7f346754b0f"
 
 [[package]]
 name = "rabia-benchmarks"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "bincode",
  "criterion",
@@ -774,7 +774,7 @@ dependencies = [
 
 [[package]]
 name = "rabia-core"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "async-trait",
  "bincode",
@@ -791,7 +791,7 @@ dependencies = [
 
 [[package]]
 name = "rabia-engine"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "anyhow",
  "async-trait",
@@ -815,7 +815,7 @@ dependencies = [
 
 [[package]]
 name = "rabia-examples"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "async-trait",
  "banking-smr",
@@ -838,7 +838,7 @@ dependencies = [
 
 [[package]]
 name = "rabia-kvstore"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "async-trait",
  "bytes",
@@ -858,7 +858,7 @@ dependencies = [
 
 [[package]]
 name = "rabia-persistence"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "async-trait",
  "parking_lot",
@@ -871,7 +871,7 @@ dependencies = [
 
 [[package]]
 name = "rabia-testing"
-version = "0.3.0"
+version = "0.4.0"
 dependencies = [
  "anyhow",
  "async-trait",

@@ -24,5 +24,4 @@ futures-util = { workspace = true }
 tokio = { workspace = true }
 
 [dev-dependencies]
-serde_json = { workspace = true }
-tokio = { workspace = true }
+tokio-test = { workspace = true }

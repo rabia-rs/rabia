@@ -85,8 +85,8 @@ Add to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-rabia-core = "0.3.0"
-rabia-engine = "0.3.0" 
+rabia-core = "0.4.0"
+rabia-engine = "0.4.0" 
 tokio = { version = "1.0", features = ["full"] }
 ```
 
