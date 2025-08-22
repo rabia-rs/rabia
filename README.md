@@ -479,8 +479,6 @@ Licensed under the [Apache License, Version 2.0](LICENSE).
 
 - **[SMR Developer Guide](docs/SMR_GUIDE.md)** - Comprehensive guide to building SMR applications with the Rabia protocol
 - **[Protocol Guide](PROTOCOL_GUIDE.md)** - Deep dive into the Rabia consensus algorithm
-- **[Migration Guide](MIGRATION_GUIDE.md)** - Guide for migrating to the new SMR-focused architecture
-- **[Troubleshooting Guide](TROUBLESHOOTING.md)** - Common issues and solutions
 - **[Generated Docs](https://docs.rs/rabia-core)** - API documentation on docs.rs
 
 ## 📞 Support
