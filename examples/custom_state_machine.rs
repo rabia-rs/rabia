@@ -16,8 +16,8 @@ use rabia_core::{
     Command, NodeId, RabiaError, Result,
 };
 use rabia_engine::{RabiaConfig, RabiaEngine};
-use rabia_network::InMemoryNetwork;
 use rabia_persistence::InMemoryPersistence;
+use rabia_testing::InMemoryNetwork;
 
 /// Simple key-value state machine
 #[derive(Debug, Clone, Serialize, Deserialize)]

@@ -99,6 +99,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "banking-smr"
+version = "0.3.0"
+dependencies = [
+ "async-trait",
+ "bincode",
+ "rabia-core",
+ "serde",
+ "tokio",
+ "tokio-test",
+ "uuid",
+]
+
+[[package]]
 name = "bincode"
 version = "1.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -206,6 +219,18 @@ name = "clap_lex"
 version = "0.7.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b94f61472cee1439c0b966b47e3aca9ae07e45d070759512cd390ea2bebc6675"
+
+[[package]]
+name = "counter-smr"
+version = "0.3.0"
+dependencies = [
+ "async-trait",
+ "bincode",
+ "rabia-core",
+ "serde",
+ "tokio",
+ "tokio-test",
+]
 
 [[package]]
 name = "crc32fast"
@@ -477,6 +502,27 @@ dependencies = [
 ]
 
 [[package]]
+name = "kvstore-smr"
+version = "0.3.0"
+dependencies = [
+ "async-trait",
+ "bincode",
+ "bytes",
+ "crossbeam-channel",
+ "dashmap",
+ "parking_lot",
+ "rabia-core",
+ "serde",
+ "serde_json",
+ "thiserror",
+ "tokio",
+ "tokio-test",
+ "tracing",
+ "tracing-subscriber",
+ "uuid",
+]
+
+[[package]]
 name = "lazy_static"
 version = "1.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -720,7 +766,7 @@ dependencies = [
  "bincode",
  "criterion",
  "rabia-core",
- "rabia-network",
+ "rabia-testing",
  "serde_json",
  "tokio",
  "tracing",
@@ -749,15 +795,17 @@ version = "0.3.0"
 dependencies = [
  "anyhow",
  "async-trait",
+ "bincode",
  "bytes",
  "dashmap",
+ "futures-util",
  "parking_lot",
  "proptest",
  "rabia-core",
- "rabia-network",
  "rabia-persistence",
  "rand 0.8.5",
  "serde",
+ "serde_json",
  "thiserror",
  "tokio",
  "tokio-test",
@@ -770,14 +818,16 @@ name = "rabia-examples"
 version = "0.3.0"
 dependencies = [
  "async-trait",
+ "banking-smr",
  "bincode",
  "bytes",
+ "counter-smr",
+ "kvstore-smr",
  "rabia-core",
  "rabia-engine",
  "rabia-kvstore",
- "rabia-leader",
- "rabia-network",
  "rabia-persistence",
+ "rabia-testing",
  "rand 0.8.5",
  "serde",
  "serde_json",
@@ -795,45 +845,6 @@ dependencies = [
  "crossbeam-channel",
  "dashmap",
  "parking_lot",
- "rabia-core",
- "serde",
- "serde_json",
- "thiserror",
- "tokio",
- "tokio-test",
- "tracing",
- "tracing-subscriber",
- "uuid",
-]
-
-[[package]]
-name = "rabia-leader"
-version = "0.3.0"
-dependencies = [
- "anyhow",
- "async-trait",
- "crossbeam-channel",
- "dashmap",
- "parking_lot",
- "proptest",
- "rabia-core",
- "rand 0.8.5",
- "serde",
- "thiserror",
- "tokio",
- "tokio-test",
- "tracing",
- "uuid",
-]
-
-[[package]]
-name = "rabia-network"
-version = "0.3.0"
-dependencies = [
- "async-trait",
- "bincode",
- "bytes",
- "futures-util",
  "rabia-core",
  "serde",
  "serde_json",
@@ -864,12 +875,11 @@ version = "0.3.0"
 dependencies = [
  "anyhow",
  "async-trait",
+ "kvstore-smr",
  "proptest",
  "rabia-core",
  "rabia-engine",
  "rabia-kvstore",
- "rabia-leader",
- "rabia-network",
  "rabia-persistence",
  "rand 0.8.5",
  "serde",

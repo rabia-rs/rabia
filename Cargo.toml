@@ -2,7 +2,7 @@
 members = [
     "rabia-core",
     "rabia-engine", 
-    "rabia-network",
+    "rabia-kvstore",
     "rabia-persistence",
     "rabia-testing",
     "examples",
@@ -21,9 +21,9 @@ repository = "https://github.com/rabia-rs/rabia"
 homepage = "https://github.com/rabia-rs/rabia"
 documentation = "https://docs.rs/rabia"
 authors = ["Rabia Contributors"]
-keywords = ["consensus", "distributed-systems", "raft", "blockchain", "async"]
+keywords = ["consensus", "distributed-systems", "state-machine-replication", "smr", "async"]
 categories = ["algorithms", "data-structures", "network-programming", "concurrency"]
-description = "High-performance Rust implementation of the Rabia consensus protocol"
+description = "High-performance State Machine Replication (SMR) framework built on the Rabia consensus protocol"
 
 [workspace.dependencies]
 tokio = { version = "1.40", features = ["full"] }

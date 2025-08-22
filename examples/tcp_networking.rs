@@ -14,7 +14,7 @@ use rabia_core::{
     network::NetworkTransport,
     BatchId, Command, CommandBatch, NodeId, PhaseId, StateValue,
 };
-use rabia_network::{TcpNetwork, TcpNetworkConfig};
+use rabia_engine::network::{TcpNetwork, TcpNetworkConfig};
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {

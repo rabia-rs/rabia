@@ -1,37 +1,96 @@
-//! # Rabia Core
+//! # Rabia Core - State Machine Replication Framework
 //!
-//! Core components and types for the Rabia consensus protocol implementation.
+//! Core components for building State Machine Replication (SMR) applications with the Rabia consensus protocol.
 //!
 //! This crate provides the fundamental building blocks for implementing
-//! the Rabia consensus algorithm, including:
+//! fault-tolerant distributed applications using the SMR pattern:
 //!
-//! ## Key Components
+//! ## SMR Framework Components
 //!
-//! - **Messages**: Protocol messages for communication between nodes
-//! - **State Machine**: Interface and implementation for deterministic state transitions
-//! - **Types**: Core types like NodeId, BatchId, PhaseId, and Commands
+//! - **StateMachine Trait**: Interface for implementing deterministic state machines
+//! - **Operation Types**: Core types for SMR operations, batching, and results
+//! - **Consensus Messages**: Protocol messages for coordinating operation ordering
+//! - **Node Management**: Types like NodeId, BatchId, PhaseId for cluster coordination
 //! - **Error Handling**: Comprehensive error types and recovery mechanisms
-//! - **Validation**: Message and state validation utilities
-//! - **Serialization**: High-performance binary serialization
+//! - **Serialization**: High-performance binary serialization for SMR operations
 //! - **Memory Management**: Optimized memory pools for reduced allocations
-//! - **Batching**: Command batching for improved throughput
+//! - **Validation**: Operation and state validation utilities
 //!
-//! ## Example Usage
+//! ## Building Your SMR Application
 //!
 //! ```rust
-//! use rabia_core::{Command, CommandBatch, NodeId, PhaseId};
+//! use rabia_core::smr::StateMachine;
+//! use async_trait::async_trait;
+//! use serde::{Deserialize, Serialize};
 //!
-//! // Create commands
-//! let cmd1 = Command::new("SET key1 value1");
-//! let cmd2 = Command::new("GET key1");
+//! #[derive(Clone, Serialize, Deserialize)]
+//! pub struct CounterCommand {
+//!     pub operation: String, // "increment", "decrement", "get"
+//!     pub value: i64,
+//! }
 //!
-//! // Create a batch
-//! let batch = CommandBatch::new(vec![cmd1, cmd2]);
+//! #[derive(Clone, Serialize, Deserialize)]
+//! pub struct CounterResponse {
+//!     pub value: i64,
+//!     pub success: bool,
+//! }
 //!
-//! // Create node and phase identifiers
-//! let node_id = NodeId::new();
-//! let phase_id = PhaseId::new(1);
+//! #[derive(Clone, Serialize, Deserialize)]
+//! pub struct CounterState {
+//!     pub value: i64,
+//! }
+//!
+//! #[derive(Clone)]
+//! pub struct CounterSMR {
+//!     state: CounterState,
+//! }
+//!
+//! #[async_trait]
+//! impl StateMachine for CounterSMR {
+//!     type Command = CounterCommand;
+//!     type Response = CounterResponse;
+//!     type State = CounterState;
+//!
+//!     async fn apply_command(&mut self, command: Self::Command) -> Self::Response {
+//!         // Your deterministic operation logic here
+//!         // This will execute identically on all replicas
+//!         match command.operation.as_str() {
+//!             "increment" => {
+//!                 self.state.value += command.value;
+//!                 CounterResponse { value: self.state.value, success: true }
+//!             }
+//!             "decrement" => {
+//!                 self.state.value -= command.value;
+//!                 CounterResponse { value: self.state.value, success: true }
+//!             }
+//!             "get" => {
+//!                 CounterResponse { value: self.state.value, success: true }
+//!             }
+//!             _ => CounterResponse { value: self.state.value, success: false }
+//!         }
+//!     }
+//!
+//!     fn get_state(&self) -> Self::State {
+//!         self.state.clone()
+//!     }
+//!
+//!     fn set_state(&mut self, state: Self::State) {
+//!         self.state = state;
+//!     }
+//!
+//!     fn serialize_state(&self) -> Vec<u8> {
+//!         bincode::serialize(&self.state).unwrap_or_default()
+//!     }
+//!
+//!     fn deserialize_state(&mut self, data: &[u8]) -> Result<(), Box<dyn std::error::Error>> {
+//!         self.state = bincode::deserialize(data)?;
+//!         Ok(())
+//!     }
+//! }
 //! ```
+//!
+//! This framework handles consensus, networking, and persistence,
+//! letting you focus on your application's business logic.
 
 pub mod batching;
 pub mod error;
@@ -40,6 +99,7 @@ pub mod messages;
 pub mod network;
 pub mod persistence;
 pub mod serialization;
+pub mod smr;
 pub mod state_machine;
 pub mod types;
 pub mod validation;

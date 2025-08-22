@@ -12,8 +12,8 @@ use rabia_core::{
     network::ClusterConfig, state_machine::InMemoryStateMachine, Command, CommandBatch, NodeId,
 };
 use rabia_engine::{EngineCommand, RabiaConfig, RabiaEngine};
-use rabia_network::InMemoryNetwork;
 use rabia_persistence::InMemoryPersistence;
+use rabia_testing::InMemoryNetwork;
 
 /// Test basic consensus with 3 nodes
 #[tokio::test]

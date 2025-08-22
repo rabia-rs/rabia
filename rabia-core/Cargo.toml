@@ -9,7 +9,7 @@ documentation.workspace = true
 authors.workspace = true
 keywords.workspace = true
 categories.workspace = true
-description = "Core types and traits for the Rabia consensus protocol"
+description = "Core SMR traits, types, and consensus algorithm implementation for the Rabia State Machine Replication framework"
 
 [dependencies]
 serde = { workspace = true }

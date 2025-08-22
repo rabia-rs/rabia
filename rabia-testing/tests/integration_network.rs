@@ -13,8 +13,8 @@ use rabia_core::{
     network::NetworkTransport,
     NodeId, PhaseId,
 };
-use rabia_network::InMemoryNetwork;
 use rabia_testing::network_sim::{NetworkConditions, NetworkSimulator, SimulatedNetwork};
+use rabia_testing::InMemoryNetwork;
 
 /// Test basic InMemoryNetwork functionality
 #[tokio::test]
