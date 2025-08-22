@@ -2,7 +2,7 @@
 //!
 //! Demonstrates how to use the Counter SMR implementation with Rabia consensus.
 
-use counter_smr::{CounterCommand, CounterSMR};
+use rabia_counter_example::{CounterCommand, CounterSMR};
 use rabia_core::smr::StateMachine;
 use tracing::{info, Level};
 

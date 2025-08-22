@@ -47,9 +47,9 @@ rabia-engine = { path = "../rabia-engine", version = "0.4.0" }
 rabia-kvstore = { path = "../rabia-kvstore", version = "0.4.0" }
 rabia-persistence = { path = "../rabia-persistence", version = "0.4.0" }
 rabia-testing = { path = "../rabia-testing", version = "0.4.0" }
-kvstore-smr = { path = "kvstore_smr", version = "0.4.0" }
-counter-smr = { path = "counter_smr", version = "0.4.0" }
-banking-smr = { path = "banking_smr", version = "0.4.0" }
+rabia-kvstore-example = { path = "kvstore_smr", version = "0.4.0" }
+rabia-counter-example = { path = "counter_smr", version = "0.4.0" }
+rabia-banking-example = { path = "banking_smr", version = "0.4.0" }
 tokio = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true }

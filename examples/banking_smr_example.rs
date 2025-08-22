@@ -2,7 +2,7 @@
 //!
 //! Demonstrates how to use the Banking SMR implementation with Rabia consensus.
 
-use banking_smr::{BankingCommand, BankingData, BankingSMR};
+use rabia_banking_example::{BankingCommand, BankingData, BankingSMR, TransactionType};
 use rabia_core::smr::StateMachine;
 use tracing::{info, Level};
 
@@ -156,9 +156,9 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
                 "  {}. {} ${:.2} ({:?}) at {}",
                 i + 1,
                 match &tx.transaction_type {
-                    banking_smr::TransactionType::Deposit => "Deposit",
-                    banking_smr::TransactionType::Withdrawal => "Withdrawal",
-                    banking_smr::TransactionType::Transfer => "Transfer",
+                    TransactionType::Deposit => "Deposit",
+                    TransactionType::Withdrawal => "Withdrawal",
+                    TransactionType::Transfer => "Transfer",
                 },
                 tx.amount as f64 / 100.0,
                 tx.transaction_type,

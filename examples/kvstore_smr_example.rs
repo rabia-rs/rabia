@@ -2,7 +2,7 @@
 //!
 //! Demonstrates how to use the KVStore SMR implementation with Rabia consensus.
 
-use kvstore_smr::{KVOperation, KVStoreSMR};
+use rabia_kvstore_example::{KVOperation, KVStoreSMR};
 use rabia_core::smr::StateMachine;
 use tracing::{info, Level};
 

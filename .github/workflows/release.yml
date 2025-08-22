@@ -85,9 +85,9 @@ jobs:
         echo "Waiting for dependencies to be indexed..."
         sleep 30
         
-        publish_crate "counter-smr"
-        publish_crate "banking-smr" 
-        publish_crate "kvstore-smr"
+        publish_crate "rabia-counter-example"
+        publish_crate "rabia-banking-example" 
+        publish_crate "rabia-kvstore-example"
         
         echo "🎉 All crates published successfully!"
 
