@@ -12,7 +12,7 @@
 //! ## Example Usage
 //!
 //! ```rust
-//! use counter_smr::{CounterSMR, CounterCommand};
+//! use rabia_counter_example::{CounterSMR, CounterCommand};
 //! use rabia_core::smr::StateMachine;
 //!
 //! #[tokio::main]

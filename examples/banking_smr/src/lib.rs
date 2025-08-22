@@ -13,7 +13,7 @@
 //! ## Example Usage
 //!
 //! ```rust
-//! use banking_smr::{BankingSMR, BankingCommand};
+//! use rabia_banking_example::{BankingSMR, BankingCommand};
 //! use rabia_core::smr::StateMachine;
 //!
 //! #[tokio::main]

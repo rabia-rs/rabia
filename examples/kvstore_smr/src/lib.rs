@@ -14,7 +14,7 @@
 //! ## Example Usage
 //!
 //! ```rust
-//! use kvstore_smr::{KVStoreSMR, KVOperation, KVStoreConfig};
+//! use rabia_kvstore_example::{KVStoreSMR, KVOperation, KVStoreConfig};
 //! use rabia_core::smr::StateMachine;
 //!
 //! #[tokio::main]
