@@ -7,7 +7,7 @@
 [![Security](https://github.com/rabia-rs/rabia/actions/workflows/security.yml/badge.svg)](https://github.com/rabia-rs/rabia/actions/workflows/security.yml)
 [![codecov](https://codecov.io/gh/rabia-rs/rabia/branch/main/graph/badge.svg)](https://codecov.io/gh/rabia-rs/rabia)
 
-A high-performance **State Machine Replication (SMR)** implementation of the Rabia consensus protocol. Rabia-rs enables developers to build fault-tolerant distributed applications by implementing custom state machines that are replicated across multiple nodes with strong consistency guarantees.
+A high-performance implementation of the Rabia consensus (**State Machine Replication (SMR)**)protocol. Rabia-rs enables developers to build fault-tolerant distributed applications by implementing custom state machines that are replicated across multiple nodes with strong consistency guarantees.
 
 ## What is State Machine Replication?
 
