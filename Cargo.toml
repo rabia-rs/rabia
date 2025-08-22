@@ -21,7 +21,7 @@ repository = "https://github.com/rabia-rs/rabia"
 homepage = "https://github.com/rabia-rs/rabia"
 documentation = "https://docs.rs/rabia"
 authors = ["Rabia Contributors"]
-keywords = ["consensus", "distributed-systems", "state-machine-replication", "smr", "async"]
+keywords = ["consensus", "distributed-systems", "consensus-protocol", "smr", "async"]
 categories = ["algorithms", "data-structures", "network-programming", "concurrency"]
 description = "High-performance implementation of the Rabia consensus protocol"
 
