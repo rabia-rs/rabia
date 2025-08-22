@@ -1,20 +1,20 @@
-//! # Rabia Engine - SMR Consensus Coordinator
+//! # Rabia Engine - SMR Protocol Coordinator
 //!
-//! The consensus engine that coordinates State Machine Replication using the Rabia protocol.
+//! Implementation of the Rabia consensus protocol for State Machine Replication.
 //!
-//! This crate provides the core engine that ensures all SMR replicas apply operations
-//! in the same order, providing strong consistency guarantees across distributed nodes.
-//! The engine handles consensus phases, operation ordering, and coordination with
-//! your state machine implementations.
+//! This crate provides the core engine implementing the Rabia SMR protocol,
+//! ensuring all replicas apply operations in the same order and providing
+//! strong consistency guarantees across distributed nodes. The engine handles
+//! consensus phases, operation ordering, and coordination with state machines.
 //!
-//! ## SMR Coordination Components
+//! ## SMR Protocol Components
 //!
-//! - **RabiaEngine**: The main SMR coordinator that ensures operation ordering
-//! - **RabiaConfig**: Configuration for SMR behavior and performance tuning
+//! - **RabiaEngine**: The main SMR protocol engine that ensures operation ordering
+//! - **RabiaConfig**: Configuration for the SMR protocol behavior and performance
 //! - **EngineState**: Internal state management for consensus coordination
 //! - **Operation Submission**: Interface for submitting operations to the SMR system
 //!
-//! ## SMR Engine Usage
+//! ## SMR Protocol Usage
 //!
 //! ```rust,no_run
 //! use rabia_engine::{RabiaEngine, RabiaConfig, EngineCommand, CommandRequest};
@@ -60,7 +60,7 @@
 //!     let mut node_ids = HashSet::new();
 //!     node_ids.insert(node_id);
 //!     
-//!     // SMR configuration
+//!     // Protocol configuration
 //!     let config = RabiaConfig::default();
 //!     let cluster_config = ClusterConfig::new(node_id, node_ids);
 //!     
@@ -71,7 +71,7 @@
 //!     // Create command channel for engine commands
 //!     let (command_tx, command_rx) = mpsc::unbounded_channel();
 //!
-//!     // Create SMR replica coordinator with TCP networking
+//!     // Create Rabia protocol engine with TCP networking
 //!     let engine = RabiaEngine::new_with_tcp(
 //!         node_id,
 //!         config,
@@ -81,7 +81,7 @@
 //!         command_rx,
 //!     ).await?;
 //!
-//!     // Start SMR coordination
+//!     // Start Rabia protocol engine
 //!     let handle = tokio::spawn(async move {
 //!         engine.run().await
 //!     });

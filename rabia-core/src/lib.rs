@@ -1,11 +1,11 @@
-//! # Rabia Core - State Machine Replication Framework
+//! # Rabia Core - State Machine Replication Protocol Implementation
 //!
-//! Core components for building State Machine Replication (SMR) applications with the Rabia consensus protocol.
+//! Core components implementing the Rabia consensus protocol for State Machine Replication (SMR).
 //!
-//! This crate provides the fundamental building blocks for implementing
-//! fault-tolerant distributed applications using the SMR pattern:
+//! This crate provides the fundamental building blocks for the Rabia SMR protocol
+//! implementation, enabling fault-tolerant distributed state machines:
 //!
-//! ## SMR Framework Components
+//! ## SMR Protocol Components
 //!
 //! - **StateMachine Trait**: Interface for implementing deterministic state machines
 //! - **Operation Types**: Core types for SMR operations, batching, and results
@@ -16,7 +16,7 @@
 //! - **Memory Management**: Optimized memory pools for reduced allocations
 //! - **Validation**: Operation and state validation utilities
 //!
-//! ## Building Your SMR Application
+//! ## Implementing State Machines with the Rabia Protocol
 //!
 //! ```rust
 //! use rabia_core::smr::StateMachine;
@@ -89,7 +89,7 @@
 //! }
 //! ```
 //!
-//! This framework handles consensus, networking, and persistence,
+//! This protocol implementation handles consensus, networking, and persistence,
 //! letting you focus on your application's business logic.
 
 pub mod batching;

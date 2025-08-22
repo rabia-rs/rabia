@@ -7,7 +7,7 @@
 [![Security](https://github.com/rabia-rs/rabia/actions/workflows/security.yml/badge.svg)](https://github.com/rabia-rs/rabia/actions/workflows/security.yml)
 [![codecov](https://codecov.io/gh/rabia-rs/rabia/branch/main/graph/badge.svg)](https://codecov.io/gh/rabia-rs/rabia)
 
-A high-performance **State Machine Replication (SMR)** framework built on the Rabia consensus protocol. Rabia-rs enables developers to build fault-tolerant distributed applications by implementing custom state machines that are replicated across multiple nodes with strong consistency guarantees.
+A high-performance implementation of the Rabia consensus (**State Machine Replication (SMR)**)protocol. Rabia-rs enables developers to build fault-tolerant distributed applications by implementing custom state machines that are replicated across multiple nodes with strong consistency guarantees.
 
 ## What is State Machine Replication?
 
@@ -18,9 +18,9 @@ State Machine Replication (SMR) is a fundamental approach to building fault-tole
 - **Identical State**: All healthy replicas maintain identical state by applying operations in the same order
 - **Fault Tolerance**: The system continues operating correctly as long as a majority of nodes are healthy
 
-Rabia-rs provides a clean SMR framework where you implement the `StateMachine` trait to define your application logic, and the Rabia consensus protocol ensures all replicas apply operations in the same order.
+Rabia-rs provides a clean SMR protocol implementation where you implement the `StateMachine` trait to define your application logic, and the Rabia consensus protocol ensures all replicas apply operations in the same order.
 
-## 🚀 SMR Framework Features
+## 🚀 SMR Protocol Features
 
 - **Simple SMR Interface**: Implement the `StateMachine` trait to build fault-tolerant applications
 - **Multiple SMR Examples**: Counter, key-value store, and banking system implementations included
@@ -44,7 +44,7 @@ Rabia-rs is designed for high-performance consensus with:
 
 ## 🏗️ SMR Architecture
 
-Rabia-rs provides a clean SMR framework organized into focused crates:
+Rabia-rs provides a clean SMR protocol implementation organized into focused crates:
 
 ```
 rabia-rs/
@@ -57,7 +57,7 @@ rabia-rs/
 └── benchmarks/         # Performance benchmarks
 ```
 
-### SMR Framework Components
+### SMR Protocol Components
 
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
@@ -79,7 +79,7 @@ rabia-rs/
 └─────────────────┘    └─────────────────┘    └─────────────────┘
 ```
 
-## 🚀 Quick Start - Building Your SMR Application
+## 🚀 Quick Start - Implementing State Machines with Rabia
 
 Add to your `Cargo.toml`:
 
@@ -145,7 +145,7 @@ impl StateMachine for CounterSMR {
 }
 ```
 
-### Step 2: Set Up SMR Cluster
+### Step 2: Set Up Rabia Protocol Cluster
 
 ```rust
 use rabia_core::{NodeId, ClusterConfig, Operation};
@@ -166,7 +166,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let config = RabiaConfig::default();
     let (_cmd_tx, cmd_rx) = mpsc::unbounded_channel();
     
-    // Start the SMR replica
+    // Start the Rabia protocol replica
     let engine = RabiaEngine::new(
         cluster_config.node_id,
         config,
@@ -176,7 +176,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         cmd_rx,
     );
     
-    println!("✅ Counter SMR replica started!");
+    println!("✅ Counter protocol replica started!");
     println!("   Your distributed counter is ready for operations");
     
     Ok(())
@@ -205,7 +205,7 @@ println!("Counter value: {}", counter_value);
 
 **Simple State Machine Interface**: Just implement `apply_operation()`, `snapshot()`, and `restore_from_snapshot()`
 
-**Deterministic Execution**: Rabia ensures your state machine operations are applied in the same order across all replicas
+**Deterministic Execution**: The Rabia protocol ensures your state machine operations are applied in the same order across all replicas
 
 ## 🔧 Advanced Features
 
@@ -241,9 +241,9 @@ buffer.buffer_mut().extend_from_slice(data);
 let bytes = buffer.take_bytes(); // Zero-copy conversion
 ```
 
-## 📚 SMR Examples
+## 📚 Protocol Examples
 
-The `examples/` directory contains comprehensive SMR implementations:
+The `examples/` directory contains comprehensive state machine implementations using the Rabia protocol:
 
 - **[Counter SMR](examples/counter_smr_example.rs)** - Simple distributed counter with increment/decrement operations
 - **[Key-Value Store SMR](examples/kvstore_smr_example.rs)** - Production-grade distributed key-value store with transactions
@@ -254,7 +254,7 @@ The `examples/` directory contains comprehensive SMR implementations:
 - **[TCP Networking](examples/tcp_networking.rs)** - SMR over real network communication
 - **[Performance Benchmark](examples/performance_benchmark.rs)** - SMR performance testing
 
-Each example demonstrates different aspects of building fault-tolerant applications with the SMR pattern.
+Each example demonstrates different aspects of building fault-tolerant applications with the Rabia SMR protocol.
 
 ## 🐳 Docker Support
 
@@ -317,21 +317,21 @@ cargo bench --bench comprehensive_optimization
 cargo bench --bench peak_performance
 ```
 
-## 🔬 SMR with Rabia Protocol Details
+## 🔬 Rabia Protocol Details
 
-The Rabia consensus protocol enables robust State Machine Replication:
+The Rabia consensus protocol implementation enables robust State Machine Replication:
 
-- **SMR Coordination**: Ensures all replicas apply operations in the same order
+- **Protocol Coordination**: Ensures all replicas apply operations in the same order
 - **No Leader, No Single Point of Failure**: Unlike Raft or PBFT, Rabia has no leader election delays
 - **Deterministic State Machines**: Your application logic runs identically across all replicas
-- **Transparent Node Management**: Adding/removing nodes is virtually transparent to SMR operation
+- **Transparent Node Management**: Adding/removing nodes is virtually transparent to protocol operation
 - **Randomized Agreement**: Uses randomization to achieve consensus on operation ordering efficiently
 - **Crash Fault Tolerance**: Handles node crashes and network partitions while maintaining SMR consistency
 - **Low Latency**: Typically 2-3 communication rounds to agree on operation order
-- **High Throughput**: Optimized for batching operations to maximize SMR performance
-- **Simplicity**: Easier to understand and implement than traditional SMR frameworks
+- **High Throughput**: Optimized for batching operations to maximize protocol performance
+- **Simplicity**: Easier to understand and implement than traditional SMR protocol implementations
 
-### SMR Operation Flow
+### Protocol Operation Flow
 
 1. **Operation Submission**: Clients submit operations to any replica
 2. **Consensus on Order**: Nodes use Rabia protocol to agree on operation ordering:
@@ -477,7 +477,7 @@ Licensed under the [Apache License, Version 2.0](LICENSE).
 
 ## 📖 Documentation
 
-- **[SMR Developer Guide](docs/SMR_GUIDE.md)** - Comprehensive guide to building SMR applications with Rabia
+- **[SMR Developer Guide](docs/SMR_GUIDE.md)** - Comprehensive guide to building SMR applications with the Rabia protocol
 - **[Protocol Guide](PROTOCOL_GUIDE.md)** - Deep dive into the Rabia consensus algorithm
 - **[Migration Guide](MIGRATION_GUIDE.md)** - Guide for migrating to the new SMR-focused architecture
 - **[Troubleshooting Guide](TROUBLESHOOTING.md)** - Common issues and solutions
