@@ -9,7 +9,7 @@ documentation.workspace = true
 authors.workspace = true
 keywords.workspace = true
 categories.workspace = true
-description = "Simple counter SMR implementation example for Rabia consensus"
+description = "Simple counter state machine implementation example using the Rabia SMR protocol"
 
 [dependencies]
 rabia-core = { path = "../../rabia-core", version = "0.3.0" }

@@ -9,7 +9,7 @@ documentation.workspace = true
 authors.workspace = true
 keywords.workspace = true
 categories.workspace = true
-description = "SMR consensus engine coordinating operation ordering and state machine replication using the Rabia protocol"
+description = "Consensus engine implementing the Rabia SMR protocol for coordinating operation ordering and state machine replication"
 
 [dependencies]
 rabia-core = { path = "../rabia-core", version = "0.3.0" }
